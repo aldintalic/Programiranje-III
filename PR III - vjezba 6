@@ -1,0 +1,503 @@
+#include<iostream>
+using namespace std;
+
+auto crt = "\n------------------------------------------------------------------------------\n";
+
+char * AlocirajNizKaraktera(const char * sadrzaj) {
+	if (sadrzaj == nullptr)
+		return nullptr;
+	int vel = strlen(sadrzaj) + 1;
+	char * temp = new char[vel];
+	strcpy_s(temp, vel, sadrzaj);
+	return temp;
+}
+
+template<class T, int max>
+class Kolekcija
+{
+	T* _elementi[max];
+	int _trenutnoElemenata;
+public:
+	//Implementirati potrebne funkcije za rad sa kolekcijom.
+	Kolekcija() {
+		for (int i = 0; i < max; i++) {
+			_elementi[i] = nullptr;
+		}
+		_trenutnoElemenata = 0;
+	}
+	~Kolekcija() {
+		for (int i = 0; i < max; i++) {
+			delete _elementi[i];
+			_elementi[i] = nullptr;
+		}
+	}
+	Kolekcija(const Kolekcija& k) {
+		for (int i = 0; i < _trenutnoElemenata; i++) {
+			if (k._elementi[i] != nullptr)
+				_elementi[i] = new T(*k._elementi[i]);
+			else
+				_elementi[i] = nullptr;
+		}
+		_trenutnoElemenata = k._trenutnoElemenata;
+	}
+	Kolekcija& operator=(const Kolekcija& k) {
+		if (this != &k) {
+			for (int i = 0; i < _trenutnoElemenata; i++)
+				delete _elementi[i];
+
+			for (int i = 0; i < _trenutnoElemenata; i++) {
+				if (k._elementi[i] != nullptr)
+					_elementi[i] = new T(*k._elementi[i]);
+				else
+					_elementi[i] = nullptr;
+			}
+			_trenutnoElemenata = k._trenutnoElemenata;
+
+			return *this;
+		}
+	}
+	bool AddElement(const T& novi) {
+		if (_trenutnoElemenata >= max)
+			return false;
+		for (int i = 0; i < _trenutnoElemenata; i++) {
+			if (*_elementi[i] == novi)
+				return false;
+		}
+		_elementi[_trenutnoElemenata++] = new T(novi);
+		return true;
+	}
+	bool RemoveByIndex(int indeks) {
+		if (indeks < 0 || indeks >= _trenutnoElemenata)
+			return false;
+		delete _elementi[indeks];
+		for (int i = indeks; i < _trenutnoElemenata - 1; i++) {
+			_elementi[i] = _elementi[i + 1];
+		}
+		_elementi[--_trenutnoElemenata] = nullptr;
+		return true;
+	}
+	bool RemoveElement(const T& el) {
+		for (int i = 0; i < _trenutnoElemenata; i++) {
+			if (*_elementi[i] == el)
+				return RemoveByIndex(i);
+		}
+		return false;
+	}
+	void Info() {
+		cout << endl << endl;
+		for (int i = 0; i < _trenutnoElemenata; i++)
+			cout << *_elementi[i] << " ";
+	}
+	int GetTrenutnoElemenata() { return _trenutnoElemenata; }
+	T* operator[](int indeks) {
+		if (indeks<0 || indeks>_trenutnoElemenata)
+			return nullptr;
+		return _elementi[indeks];
+	}
+
+};
+
+class Prisustvo
+{
+	char* _brojIndeksa;
+	int _brojSati;
+public:
+	//Osnovne funkcije za rad s klasom
+	Prisustvo(const char* brojIndeksa, int brojSati) : _brojSati(brojSati) {
+		_brojIndeksa = AlocirajNizKaraktera(brojIndeksa);
+	}
+	Prisustvo() :_brojIndeksa(nullptr), _brojSati(0) {}
+	~Prisustvo() {
+		delete[] _brojIndeksa;
+		_brojIndeksa = nullptr;
+	}
+	//Preklopljeni operator + i += za uvecavanje broja sati prisustva za 
+	//vrijednost proslijedenog parametra
+	Prisustvo(const Prisustvo& original) {
+		_brojIndeksa = AlocirajNizKaraktera(original._brojIndeksa);
+		_brojSati = original._brojSati;
+
+	}
+	friend Prisustvo operator+(const Prisustvo&, int);
+	Prisustvo& operator+=(int brojSati) {
+		if (_brojSati > 0)
+			_brojSati += brojSati;
+		return *this;
+	}
+	friend ostream& operator<<(ostream&, const Prisustvo&);
+	Prisustvo& operator=(const Prisustvo& p) {
+		delete[] _brojIndeksa;
+		_brojIndeksa = AlocirajNizKaraktera(p._brojIndeksa);
+		_brojSati = p._brojSati;
+		return *this;
+	}
+	friend bool operator>(const Prisustvo&, const Prisustvo&);
+	friend bool operator<(const Prisustvo&, const Prisustvo&);
+	friend bool operator==(const Prisustvo&, const Prisustvo&);
+	const char* GetBrojIndeksa() const { return _brojIndeksa; }
+	int GetBrojSati()const { return _brojSati; }
+};
+bool operator>(const Prisustvo& lijevi, const Prisustvo& desni) {
+	return strcmp(lijevi._brojIndeksa, desni._brojIndeksa) == 1;
+}
+bool operator<(const Prisustvo& lijevi, const Prisustvo& desni) {
+	return strcmp(lijevi._brojIndeksa, desni._brojIndeksa) == -1;
+}
+bool operator==(const Prisustvo& lijevi, const Prisustvo& desni) {
+	return strcmp(lijevi._brojIndeksa, desni._brojIndeksa) == 0;
+}
+Prisustvo operator+(const Prisustvo& p, int brojSati) {
+	Prisustvo novo(p);
+	novo._brojSati += brojSati;
+	return novo;
+}
+ostream& operator<<(ostream& ispis, const Prisustvo& p) {
+	cout << endl;
+	cout << "Broj indeksa: " << p._brojIndeksa << endl;
+	cout << "Broj sati: " << p._brojSati << endl;
+	return ispis;
+
+}
+
+class Nastava
+{
+	char _datum[12];
+	char _tipNastave; //P ili V
+	int _odrzanoSati;
+	Prisustvo* _prisutni;
+	int _brojStudenata;
+public:
+	//Konstruktor sa osnovnim atributima klase
+	Nastava(const char* datum, const char tipNastave, int odrzano) :_prisutni(nullptr), _brojStudenata(0) {
+		strncpy_s(_datum, datum, _TRUNCATE);
+		_tipNastave = tipNastave;
+		_odrzanoSati = odrzano;
+	}
+	Nastava() :_odrzanoSati(0), _prisutni(nullptr), _brojStudenata(0) {
+		strncpy_s(_datum, "NO VALUE", _TRUNCATE);
+		_tipNastave = '\0';
+	}
+	Nastava(const Nastava& original){
+		strncpy_s(_datum, original._datum, _TRUNCATE);
+		_tipNastave = original._tipNastave;
+		_odrzanoSati = original._odrzanoSati;
+		_prisutni = new Prisustvo[original._brojStudenata];
+		for (int i = 0; i < original._brojStudenata; i++)
+			_prisutni[i] = original._prisutni[i];
+		_brojStudenata = original._brojStudenata;
+	}
+	//Destruktor
+	~Nastava() {
+		delete[] _prisutni; _prisutni = nullptr;
+	}
+
+	//Preklopljeni operator+= za dodavanje objekata tipa Prisustvo u niz _prisutni.
+	//Nije moguce dodati vi�e puta prisustvo za istog studenta 
+	//(preklopiti operator== u klasi Prisustvo).
+	//Elementi u svakom momentu treba da budu sortirani po broju indeksa studenta 
+	//(preklopiti operator < u klasi Prisustvo).
+	bool operator+=(const Prisustvo& p) {
+		for (int i = 0; i < _brojStudenata; i++) {
+			if (_prisutni[i] == p)
+				return false;
+		}
+		Prisustvo* temp = new Prisustvo[_brojStudenata + 1];
+		int brojac = 0, indeks = _brojStudenata;
+		bool prolaz = false;
+		for (int i = 0; brojac < _brojStudenata; i++) {
+			if (prolaz == false && p < _prisutni[brojac]) {
+				indeks = i;
+				prolaz = true;
+				i++;
+			}
+			temp[i] = _prisutni[brojac++];
+		}
+		temp[indeks] = p;
+		delete[] _prisutni;
+		_prisutni = temp;
+		_brojStudenata++;
+		return true;
+	}
+	friend ostream& operator<<(ostream&, const Nastava&);
+
+
+	//Preklopljeni operator-= za uklanjanje prisustva za studenta sa proslijedjenim brojem indeksa.
+	//Nakon uklanjanja,
+	//potrebno je sacuvati redoslijed dodavanja, odnosno podaci ostaju sortirani po broju indeksa.
+	int DaLiPostoji(const char* indeks) {
+		for (int i = 0; i < _brojStudenata; i++)
+			if (strcmp(_prisutni[i].GetBrojIndeksa(), indeks) == 0)
+				return i;
+		return -1;
+	}
+	bool operator-=(const char* indeks) {
+		int pozicija = DaLiPostoji(indeks);
+		if (pozicija == -1)
+			return false;
+		Prisustvo* temp = new Prisustvo[_brojStudenata - 1];
+		int brojac = 0;
+		for (int i = 0; i < _brojStudenata; i++) {
+			if (i != pozicija)
+				temp[brojac++] = _prisutni[i];
+		}
+		delete[] _prisutni;
+		_prisutni = temp;
+		_brojStudenata--;
+		return true;
+
+
+	}
+
+	//Preklopljeni operator [] koji na osnovu broja indeksa provjerava da li je 
+	//odredeni student prisustvovao nastavi i vraca njegove podatke o prisustvu.
+	
+	Prisustvo operator[](const char* brojIndeksa) {
+		int indeks = DaLiPostoji(brojIndeksa);
+		return _prisutni[indeks];
+	}
+
+	//Preklopljeni operator () koji pronalazi studenta sa proslijedenim brojem indeksa i uvecava mu broj 
+	//sati prisustva za vrijednost drugog parametra. Ako je studentu vec evidentiran odrzani broj sati 
+	//nastave prekinuti funkciju.
+
+	void operator()(const char* brojIndeksa, int brojSati) {
+		int indeks = DaLiPostoji(brojIndeksa);
+		if (indeks != -1)
+			if (_prisutni[indeks].GetBrojSati() > 0)
+				return;
+			else
+				_prisutni[indeks] += brojSati;
+
+	}
+
+
+	//Preklopljeni operator + koji zbraja dva objekta tipa Nastava na nacin da kreira novi objekat na 
+	//osnovu lijevog operanda i dodaje mu prisutne studente desnog operanda. Funkciju napustiti ukoliko 
+	//objekti koji ucestvuju u operaciji sabiranja nisu istog tipa nastave. Sprijeciti dodavanje prisustva 
+	//za istog studenta vi�e puta. Operator implementirati kao globalnu funkciju.
+	friend Nastava operator+(const Nastava&, const Nastava&);
+	friend bool operator==(const Nastava& , const Nastava& );
+	bool Provjera  (const char* datum, const char tipNastave)const {
+		if (strcmp(_datum, datum) == 0 && _tipNastave == tipNastave)
+			return true;
+		return false;
+	}
+	Prisustvo& GetPrisustvo(int indeks) const{
+		return _prisutni[indeks];
+	}
+	int GetBrojSati() { return _odrzanoSati; }
+	const char GetTipNastave() { return _tipNastave; }
+	int GetBrojStudenata() { return _brojStudenata; }
+	Prisustvo* GetPrisustva() { return _prisutni; }
+
+	Nastava& operator+=(int brojSati) {
+		_odrzanoSati += brojSati;
+		return *this;
+	}
+};
+Nastava operator+(const Nastava& lijevi, const Nastava& desni) {
+	if (lijevi._tipNastave == desni._tipNastave) {
+		Nastava novaNastava(lijevi);
+		for (int i = 0; i < desni._brojStudenata; i++)
+			novaNastava += desni._prisutni[i];
+		return novaNastava;
+	}
+
+}
+ostream& operator<<(ostream& ispis, const Nastava& n) {
+	ispis << "Datum: " << n._datum << endl;
+	ispis << "Tip Nastave: " << n._tipNastave << "( " << n._odrzanoSati << " )" << endl;
+	for (int i = 0; i < n._brojStudenata; i++)
+		cout << n._prisutni[i] << endl;
+
+	return ispis;
+}
+bool operator==(const Nastava& lijevi, const Nastava& desni) {
+	if (lijevi.Provjera(desni._datum, desni._tipNastave))
+		return true;
+	return false;
+}
+class Predmet
+{
+	char* _naziv;
+	int _godinaStudija;
+	Kolekcija<Nastava, 45> _odrzanaNastava;
+public:
+	Predmet(const char* naziv, int godinaStudija) : _godinaStudija(godinaStudija){
+		_naziv = AlocirajNizKaraktera(naziv);
+	}
+	~Predmet(){
+		delete[] _naziv;
+		_naziv = nullptr;
+	}
+
+	//Funkciju za evidenciju odr�ane nastave na predmetu.
+	void AddEvidencija(const Nastava& n) {
+		_odrzanaNastava.AddElement(n);
+	}
+
+	/*Funkciju koja na osnovu datuma i tipa odr�ane nastave dodaje prisustvo studentu sa proslijedenim 
+	brojem indeksa i brojem sati.Voditi racuna da broj sati prisustva ne mo�e biti veci od broja sati 
+	odr�ane nastave.*/
+	void DodajPrisustvo(const char* datum,const char tipNastave,const char* brojIndeksa,int brojSati) {
+		int indeks = -1;
+		for (int i = 0; i < _odrzanaNastava.GetTrenutnoElemenata(); i++){
+			if (_odrzanaNastava[i] != nullptr) {
+				if (_odrzanaNastava[i]->Provjera(datum, tipNastave)) {
+					indeks = i;
+					break;
+				}
+			}
+		}
+		if(indeks!=-1 && brojSati<=_odrzanaNastava[indeks]->GetBrojSati())
+			*_odrzanaNastava[indeks] += *(new Prisustvo(brojIndeksa, brojSati));
+	
+	}
+	void Info() {
+		cout << *_odrzanaNastava[0];
+	}
+
+	/*Funkciju koja na osnovu datuma i tipa odr�ane nastave uklanja prisustvo studentu sa proslijedenim 
+	brojem indeksa.*/
+	void UkloniPrisustvo(const char* datum, const char tipNastave, const char* brojIndeksa) {
+		int indeks = -1;
+		for (int i = 0; i < _odrzanaNastava.GetTrenutnoElemenata(); i++) {
+			if (_odrzanaNastava[i] != nullptr) {
+				if (_odrzanaNastava[i]->Provjera(datum, tipNastave)) {
+					indeks = i;
+					break;
+				}
+			}
+		}
+		if (indeks != -1) 
+			*_odrzanaNastava[indeks] -= brojIndeksa;
+		
+	}
+
+
+	/*Funkciju koja na osnovu broja indeksa studenta vraca sve podatke o njegovom prisustvu na nastavi*/
+	Prisustvo& GetPodaciStudenta(const char* brojIndeksa) {
+		for (int i = 0; i < _odrzanaNastava.GetTrenutnoElemenata(); i++){
+			if (_odrzanaNastava[i] != nullptr) {
+				int indeks = _odrzanaNastava[i]->DaLiPostoji(brojIndeksa);
+				if (indeks != -1)
+					return _odrzanaNastava[i]->GetPrisustvo(indeks);
+			}
+		}
+	}
+
+
+	/*Funkciju koja na osnovu tipa nastave (P ili V) vr�i ispis prisustva za sve studente (sumarno) u 
+	datom formatu:
+	IB140001 30/40 75%, gdje je prva kolona "broj indeksa", druga kolona "broj sati prisustva / ukupan broj
+	sati odr�ane nastave" i
+	treca kolona "procenat prisustva studenta na nastavi".*/
+	int GetUkupno(const char* brojIndeksa) {
+		int suma = 0;
+		for (int i = 0; i < _odrzanaNastava.GetTrenutnoElemenata(); i++){
+			if (_odrzanaNastava[i] != nullptr) {
+				for (int j = 0; j < _odrzanaNastava[i]->GetBrojStudenata(); j++){
+					if (strcmp(_odrzanaNastava[i]->GetPrisustva()[j].GetBrojIndeksa(), brojIndeksa) == 0) {
+						suma += _odrzanaNastava[i]->GetPrisustva()[j].GetBrojSati();
+						break;
+					}
+				}
+			}
+		}
+		return suma;
+	}
+
+	void Info(const char tipNastave) {
+		Nastava sve;
+		int brojac = 0;
+		for (int i = 0; i < _odrzanaNastava.GetTrenutnoElemenata(); i++) {
+			sve += _odrzanaNastava[i]->GetBrojSati();
+			if (_odrzanaNastava[i] != nullptr && _odrzanaNastava[i]->GetTipNastave() == tipNastave) {
+				for (int j = 0; j < _odrzanaNastava[i]->GetBrojStudenata(); j++) {
+					int indeks = sve.DaLiPostoji(_odrzanaNastava[i]->GetPrisustva()[j].GetBrojIndeksa());
+					if (indeks != -1)
+						sve.GetPrisustva()[indeks] += _odrzanaNastava[i]->GetPrisustva()[j].GetBrojSati();
+					sve += _odrzanaNastava[i]->GetPrisustva()[j];
+
+				}
+			}
+		}
+		cout <<crt<< " Broj indeksa\t Broj sati prisustva / ukupan broj sati\t   Procenat prisustva"<< crt;
+		for (int i = 0; i < sve.GetBrojStudenata(); i++){
+			cout <<i+1<<". "<< sve.GetPrisustva()[i].GetBrojIndeksa() << "\t\t\t" << sve.GetPrisustva()[i].GetBrojSati() <<
+				" / " << sve.GetBrojSati() << "\t\t\t\t  " << sve.GetPrisustva()[i].GetBrojSati()*1.0 / sve.GetBrojSati() * 100<<" %" << endl;
+		}
+		cout << crt;
+	}
+
+	friend ostream& operator<<(ostream&, const Predmet&);
+};
+
+ostream& operator<<(ostream& cout, const Predmet& p)
+{
+	cout << "Predmet: " << p._naziv << endl;
+	cout << "Godina studija: " << p._godinaStudija << endl;
+
+	return cout;
+
+}
+
+int main()
+{
+	//Testirati sve dostupne funkcionalnosti klasa Prisustvo i Nastava.
+	Kolekcija<int, 10> kolekcija;
+	cout << crt<<"KOLEKCIJA TEST" << crt;
+	for (int i = 0; i < 10; i++)
+		kolekcija.AddElement(i);
+	kolekcija.Info();
+	kolekcija.RemoveByIndex(2);
+	kolekcija.RemoveByIndex(0);
+	kolekcija.RemoveByIndex(6);
+	kolekcija.RemoveElement(9);
+	kolekcija.Info();
+	cout << crt;
+	Prisustvo p1("IB170067", 20);
+	Prisustvo p2("IB170011", 27);
+	Prisustvo p3("IB170065", 32);
+	Prisustvo p4("IB170123", 13);
+	Prisustvo p5("IB170212", 12);
+
+	Nastava n1("5.12.2018", 'P', 35);
+	Nastava n2("1.9.2017", 'P', 15);
+	cout <<crt<< "NASTAVA TEST" << crt;
+	n1 += p1;
+	n1 += p3;
+	n1 += p4;
+	n1 += p2;
+	cout << "ISPIS NASTAVE 1" << crt;
+	cout << n1;
+	n1 -= "IB170123";
+	cout << crt;
+	cout << n1;
+	cout << crt;
+	cout << n1["IB170067"];
+	n2 += p4;
+	n2 += p5;
+	cout << crt << "ISPIS NASTAVE 2" << crt;
+	cout << n2;
+	cout << crt;
+	cout << n1 + n2;
+	
+	cout << crt << "PREDMET TEST" << crt;
+
+	Predmet predmet("Programiranje III", 2);
+	predmet.AddEvidencija(n1);
+	predmet.AddEvidencija(n2);
+
+	predmet.DodajPrisustvo("5.12.2018", 'P', "IB170044", 28);
+	predmet.DodajPrisustvo("5.12.2018", 'P', "IB170350", 34);
+	
+	predmet.UkloniPrisustvo("5.12.2018", 'P', "IB170065");
+	cout << predmet.GetPodaciStudenta("IB170067");
+	cout << crt;
+	predmet.Info('P');
+
+	system("pause>0");
+	return 0;
+}
+
