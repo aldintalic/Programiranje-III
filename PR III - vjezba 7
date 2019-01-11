@@ -1,0 +1,252 @@
+#include<iostream>
+using namespace std;
+
+char* AlocirajNizKaraktera(const char* kopija) {
+	if (kopija == nullptr)
+		return nullptr;
+	int vel(strlen(kopija) + 1);
+	char* temp = new char[vel];
+	strcpy_s(temp, vel, kopija);
+	return temp;
+}
+auto crt = "\n---------------------------------------\n";
+template<class T1, class T2, int max>
+class FITKolekcija
+{
+	int* _trenutno;
+	T1 _elementi1[max];
+	T2* _elementi2[max];
+	int DaLiPostojiE1(const T1& obj) {
+		for (int i = 0; i < *_trenutno; i++)
+			if (obj == _elementi1[i])
+				return true;
+		return false;
+	}
+	int DaLiPostojiE2(const T2& obj) {
+		for (int i = 0; i <*_trenutno;i++)
+			if(obj==*_elementi2[i])
+				return true;
+		return false;
+	}
+
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	FITKolekcija(){
+		_trenutno = new int;
+		*_trenutno = 0;
+		for (int i = 0; i < max; i++)
+			_elementi2[i] = nullptr;
+		
+	}
+	~FITKolekcija(){
+		for (int i = 0; i < *_trenutno; i++){
+			delete _elementi2[i];
+			_elementi2[i] = nullptr;
+		}
+		delete _trenutno; _trenutno = nullptr;
+	}
+	//Kreirati konstruktor kopije za kolekciju
+	FITKolekcija(const FITKolekcija& original){
+		_trenutno = new int(original._trenutno);
+		for (int i = 0; i < _trenutno; i++){
+			_elementi1[i] = original._elementi1[i];
+			_elementi2[i] = new T2(original._elementi2[i]);
+		}
+
+	}
+
+	int GetTrenutno()const { return *_trenutno; }
+	T1* GetElementi1() { return _elementi1; }
+	T2** GetElementi2() { return _elementi2; }
+
+	//Preklopiti operator() na nacin da omoguci dodavanje novih elemenata u kolekciju
+	//Pri tome sprijeciti dodavanja duplih elemenata (odnosi se i na T1 i na T2)
+	bool AddElementi(const T1& obj1, const T2& obj2) {
+		if (DaLiPostojiE1(obj1) || DaLiPostojiE2(obj2))
+			return false;
+		_elementi1[*_trenutno] = obj1;
+		_elementi2[*_trenutno] = new T2(obj2);
+		(*_trenutno)++;
+		return true;
+	}
+	
+	//Preklopiti operator[] na nacin da vraca element tipa T1 na osnovu njegove lokacije u nizu
+	T1& operator[](int indeks) {
+		if (indeks >= 0 && indeks < *_trenutno) {
+			return _elementi1[indeks];
+		}
+	}
+
+	//Preklopiti operator-= na nacin da uklanja elemente iz kolekcije na osnovu rednog broja 
+	//proslijedenog kao parametar
+
+	bool operator-=(int indeks) {
+		if (indeks < 0 || indeks >= *_trenutno)
+			return false;
+		delete _elementi2[indeks];
+		for (int i = indeks; i < *_trenutno-1; i++) {
+			_elementi1[i] = _elementi1[i + 1];
+			_elementi2[i] = _elementi2[i + 1];
+		}
+		_elementi2[*_trenutno - 1] = nullptr;
+		(*_trenutno)--;
+		return true;
+
+	}
+
+	//Preklopiti operator za ispis. Implementaciju raditi izvan tijela klase.
+	friend ostream& operator<< <>(ostream& , const FITKolekcija&);
+	FITKolekcija& operator=(const FITKolekcija& original) {
+		if (this != &original) {
+			delete _trenutno;
+			_trenutno = new int(*original._trenutno);
+			for (int i = 0; i < *_trenutno; i++){
+				delete _elementi2[i];
+				_elementi2[i] = nullptr;
+			}
+			for (int i = 0; i < *_trenutno; i++){
+				_elementi1[i] = original._elementi1[i];
+				_elementi2[i] = new T2(*original._elementi2[i]);
+			}
+		}
+		return *this;
+
+	}
+};
+template<class T1,class T2,int velicina>
+ostream& operator<< <>(ostream& ispis, const FITKolekcija<T1, T2, velicina>& kolekcija) {
+	ispis << crt;
+	for (int i = 0; i < *kolekcija._trenutno; i++)
+		ispis << *kolekcija._elementi2[i] << ". " << kolekcija._elementi1[i] << endl;
+	ispis << crt;
+	return ispis;
+
+}
+
+class Anketa
+{
+	char* _pitanje;
+	int _trajanje; //izra�eno u danima
+	//Kolekcija treba da pohrani moguce odgovore na pitanja, sa pripadajucim rednim brojem
+	FITKolekcija<char*, int, 8> _odgovori;
+	bool DaLiPostoji(const char* pitanje) {
+		for (int i = 0; i < _odgovori.GetTrenutno(); i++)
+			if (strcmp(_odgovori.GetElementi1()[i], pitanje) == 0)
+				return true;
+		return false;
+	}
+public:
+	//Kreirati potrebne konstruktor i destruktor funkcije
+	Anketa(const char* pitanje,int trajanje){
+		_pitanje = AlocirajNizKaraktera(pitanje);
+		_trajanje = trajanje;
+	}
+	Anketa(Anketa& original){
+		_pitanje = AlocirajNizKaraktera(original._pitanje);
+		_trajanje = original._trajanje;
+		for (int i = 0; i < original._odgovori.GetTrenutno(); i++)
+			_odgovori.AddElementi(AlocirajNizKaraktera(original._odgovori.GetElementi1()[i]),*original._odgovori.GetElementi2()[i]);
+	}
+	~Anketa(){
+		delete[] _pitanje; _pitanje = nullptr;
+		for (int i = 0; i < _odgovori.GetTrenutno(); i++){
+			delete[] _odgovori.GetElementi1()[i];
+			_odgovori.GetElementi1()[i] = nullptr;
+		}
+	}
+
+	//Kreirati funkciju DodajOdgovor koja treba da doda novi odgovor za anketu.
+	//Sprijeciti dodavanje istog odgovora vi�e puta.
+	bool DodajOdgovor(const char* odgovor,int redniBroj) {
+		if (DaLiPostoji(odgovor)){
+			return false;
+		}
+		_odgovori.AddElementi(AlocirajNizKaraktera(odgovor), redniBroj);
+		return true;
+	}
+
+
+	//Kreirati funkciju UkloniOdgovor koja uklanja odgovor na osnovu 
+	//njegovog rednog broja.
+
+	bool UkloniOdgovor(int indeks) {
+		if (indeks<0 || indeks>_odgovori.GetTrenutno())
+			return false;
+		delete[] _odgovori.GetElementi1()[indeks];
+		if (_odgovori -= indeks)
+			return true;
+		return false;
+	}
+
+	//Preklopiti operator++ na nacin da povecava trajanje ankete za jedan dan
+	//Pri tome voditi racuna da se implementiraju dvije verzije ovog operatora
+	//(objekat++; ++objekat)
+	Anketa operator++(int) {
+		Anketa temp(*this);
+		_trajanje++;
+		return temp;
+	}
+	Anketa& operator++() {
+		_trajanje++;
+		return *this;
+	}
+
+	//Preklopiti operator za ispis
+	friend ostream& operator<<(ostream& , const Anketa& );
+};
+ostream& operator<<(ostream& ispis, const Anketa& anketa) {
+	ispis << crt << anketa._pitanje << " -> "<<anketa._trajanje<<crt;
+	ispis << anketa._odgovori;
+	
+	return ispis;
+
+}
+
+int main()
+{
+#pragma region FITKolekcija
+	FITKolekcija<int, int, 20> nizIntegera;
+
+	for (int i = 0; i < 20; i++)
+		nizIntegera.AddElementi(i, i);
+	
+	cout << nizIntegera;
+	cout <<"Dobavaljam element "<< nizIntegera[5]<<" iz kolekcije."<<endl;
+	cout << "Dobavaljam element " << nizIntegera[10] << " iz kolekcije." << endl;
+	nizIntegera -= 15;
+	nizIntegera -= 7;
+	cout << nizIntegera << endl;
+	FITKolekcija<int, int, 20> noviNizIntegera;
+	noviNizIntegera = nizIntegera;
+	cout  <<"Novi niz: "<<endl<<noviNizIntegera << endl;
+#pragma endregion FITKolekcija
+
+#pragma region Anketa
+	Anketa anketa("Hoce li BiH pobijediti Austriju veceras?",3);
+
+	if (anketa.DodajOdgovor("Hoce naravno", 1))
+		cout << crt << "Odgovor uspjesno dodan." << crt;
+	
+	if (anketa.DodajOdgovor("Svakako", 2))
+		cout  << "Odgovor uspjesno dodan." << crt;
+	
+	if (anketa.DodajOdgovor("Pa ne znam, nisam siguran", 3))
+		cout << "Odgovor uspjesno dodan." << crt;
+	
+	if (anketa.DodajOdgovor("Hoce naravno", 4))
+		cout << "Odgovor uspjesno dodan." << crt;
+	else
+		cout << "Odgovor nije uspjesno dodan." << crt;
+
+	anketa.UkloniOdgovor(2);
+	cout<<anketa++;
+	++anketa;
+	cout << anketa;
+
+#pragma endregion Anketa
+
+	system("pause>0");
+	return 0;
+}
+
+
