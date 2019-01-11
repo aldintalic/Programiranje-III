@@ -1,0 +1,475 @@
+#include<iostream>
+#include<conio.h>
+using namespace std;
+
+const char* crt = "\n------------------------------------------\n";
+
+
+class Vrijeme {
+	int _sati;
+	int _minute;
+	int _sekunde;
+public:
+
+	//Konstruktor bez parametara
+	Vrijeme() {
+		_sati = _minute = _sekunde = 0;
+	}
+	//Konstruktor sa 3 parametra (sati, minute i sekunde)
+	Vrijeme(int h, int m, int s) {
+		_sati = h;
+		_minute = m;
+		_sekunde = s;
+	}
+	//Konstruktor sa 2 parametra (sati i minute)
+	Vrijeme(int h, int m) {
+		_sati = h;
+		_minute = m;
+		_sekunde = 0;
+	}
+	//Funkciju Info sa neobaveznim parametrom tipa bool koji odreduje da li ce vrijeme biti ispisano u punom formatu
+	//(hh:mm:ss) ili u skracenom formatu (hh:mm). Default-no funkcija vrši ispis u punom formatu.
+	void Info(bool format = true) {
+		if (format)
+			cout << _sati << ":" << _minute << ":" << _sekunde << endl;
+		else
+			cout << _sati << ":" << _minute << endl;
+	}
+
+
+	//Funkciju Add koja kao rezultat vraca novi objekat tipa vrijeme koji predstavlja 
+	//sumu vremena poslijedenog kao parametar i instance this.
+	Vrijeme Add(Vrijeme dodaj) {
+		Vrijeme novoVrijeme(_sati, _minute, _sekunde);
+		novoVrijeme._sekunde += dodaj._sekunde;
+		novoVrijeme._minute = novoVrijeme._minute + dodaj._minute + novoVrijeme._sekunde / 60;
+		novoVrijeme._sati = novoVrijeme._sati + dodaj._sati + novoVrijeme._minute / 60;
+		novoVrijeme._minute %= 60;
+		novoVrijeme._sekunde %= 60;
+		while (novoVrijeme._sati > 24) {
+			novoVrijeme._sati -= 24;
+		}
+		return novoVrijeme;
+	}
+
+
+
+	//Funkciju Add koja kao rezultat vraca novi objekat tipa vrijeme koji predstavlja 
+	//sumu parametra izraženog u minutama i vremena instance this.
+
+	Vrijeme Add(int min) {
+		Vrijeme novoVrijeme(_sati, _minute, _sekunde);
+		novoVrijeme._minute = novoVrijeme._minute + min;
+		novoVrijeme._sati = novoVrijeme._sati + novoVrijeme._minute / 60;
+		novoVrijeme._minute %= 60;
+		novoVrijeme._sekunde %= 60;
+		while (novoVrijeme._sati > 24) {
+			novoVrijeme._sati -= 24;
+		}
+		return novoVrijeme;
+	}
+
+
+	//Funkciju CompareTo koja vraca vrijednost tipa int u zavisnosti od toga da li je vrijeme instance this prije, jednako ili poslije
+	//vremena proslijedenog kao parametar.
+	//Moguce povratne vrijednosti:
+	//-1 - vrijeme instance this nastupa prije vremena v2
+	// 0 - vrijeme instance this je jednako vremenu v2
+	// 1 - vrijeme instance this nastupa nakon vremena v2
+	int CompareTo(Vrijeme vrijeme) {
+		int trenutno = this->_sati * 3600 + this->_minute * 60 + this->_sekunde;
+		int vrijeme2 = vrijeme._sati * 3600 + vrijeme._minute * 60 + vrijeme._sekunde;
+		if (trenutno > vrijeme2)
+			return 1;
+		else
+			if (trenutno == vrijeme2)
+				return 0;
+			else
+				return -1;
+	}
+
+};
+
+
+/*
+Potrebno je kreirati aplikaciju za dijeljenje znanja putem razmjene clanaka medu korisnicima.
+
+Izdvojene su sljedece funkcionalnosti:
+- Administrator sistema je zadužen za upravljanje korisnickim nalozima (Ime, Prezime, Email, DatumRegistracije, KorisnickoIme, Lozinka).
+- Svaki clanak (Naslov, Sadrzaj, Datum, Satnica, BrojPregleda) može sadržavati više tagova, ali pripada samo jednoj oblasti.
+- Clanke mogu dodavati svi registrovani korisnici.
+- Korisnici aplikacije takoder mogu ostaviti komentar (Tekst, Datum, Popularnost) na odredeni clanak.
+*/
+
+/*
+Na osnovu datih klasa implementirati opisane funkcionalnosti sistema. Po potrebi dopuniti klase novim atributima i/ili funkcijama.
+*/
+
+class Datum
+{
+	int _dan;
+	int _mjesec;
+	int _godina;
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	Datum(int d, int m, int g) {
+		_dan = d;
+		_mjesec = m;
+		_godina = g;
+	}
+	Datum() {
+		_dan = _mjesec = _godina = 1;
+	}
+
+	//Funkciju Info
+	void Info() {
+		cout << _dan << "/" << _mjesec << "/" << _godina;
+	}
+};
+
+enum TipKorisnika { Administrator, Guest };
+const char* charTipKorisnika[]{ "Administrator", "Guest " };
+
+class Korisnik
+{
+	char _ime[30];
+	char _korisnickoIme[20];
+	char* _lozinka;
+	TipKorisnika _tipKorisnika; //Administrator, Guest
+	
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	Korisnik(const char* ime, const char* korisnickoIme, const char* lozinka, TipKorisnika tipKorisnika) {
+		strcpy_s(_ime, ime);
+		strcpy_s(_korisnickoIme, korisnickoIme);
+		_lozinka = new char[strlen(lozinka) + 1];
+		strcpy_s(_lozinka, strlen(lozinka) + 1, lozinka);
+		_tipKorisnika = tipKorisnika;
+	}
+	Korisnik() {
+		strcpy_s(_ime, nullptr);
+		strcpy_s(_korisnickoIme, nullptr);
+		_lozinka = nullptr;
+		_tipKorisnika = Guest;
+	}
+	~Korisnik() {
+		delete[] _lozinka; _lozinka = nullptr;
+	}
+
+	//Funkciju za promjenu korisnicke lozinke
+	void PromjenaLozinke() {
+		if (Validacija()) {
+			cout << endl << "Lozinka je potvrdjena, molimo unesite novu lozinku -> " << endl;
+			char buffer[255];
+			int br = 0;
+			do {
+				buffer[br] = _getwch();
+				cout << "*";
+				br++;
+			} while (buffer[br - 1] != 13);
+			buffer[br - 1] = '\0';
+			delete[] _lozinka;
+			_lozinka = new char[strlen(buffer) + 1];
+			strcpy_s(_lozinka, strlen(buffer) + 1, buffer);
+		}
+		else
+			cout << endl << "Unijeli ste netacnu lozinku" << endl;
+	}
+	bool Validacija() {
+		cout << endl << "Unesite trenutnu lozinku -> " << endl;
+		char buffer[255];
+		int br = 0;
+		do {
+			buffer[br] = _getwch();
+			cout << "*";
+			br++;
+		} while (buffer[br - 1] != 13);
+		buffer[br - 1] = '\0';
+		if (strcmp(buffer, _lozinka) == 0)
+			return true;
+		return false;
+	}
+	//Funkciju Info
+	void Info() {
+		cout << "Ime i prezime -> " << _ime << endl << "Korisnicko ime -> " << _korisnickoIme << endl << "Tip korisnika -> " << charTipKorisnika[_tipKorisnika] << endl;
+		//cout << "Lozinka ->" << _lozinka << endl;
+	}
+
+	const char* GetIme() const { return _ime; }
+	const char* GetKorisnickoIme() const { return _korisnickoIme; }
+	const char* GetLozinka() const { return _lozinka; }
+	TipKorisnika GetTipKorisnika()const { return _tipKorisnika; }
+
+};
+
+class Komentar
+{
+	char* _tekst;
+	Datum _datum;
+	Vrijeme _satnica;
+	int _popularnost;
+	Korisnik* _autor;
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	Komentar(const char* tekst, const Datum& datum, const Vrijeme& satnica, int popularnost, const Korisnik& autor) {
+		_tekst = new char[strlen(tekst) + 1];
+		strcpy_s(_tekst, strlen(tekst) + 1, tekst);
+		_datum = datum;
+		_satnica = satnica;
+		_popularnost = popularnost;
+		_autor = new Korisnik(autor.GetIme(), autor.GetKorisnickoIme(), autor.GetLozinka(), autor.GetTipKorisnika());
+	}
+	Komentar() {
+		_tekst = nullptr;
+		_popularnost = 0;
+		_autor = nullptr;
+	}
+	~Komentar() {
+		delete[] _tekst; _tekst = nullptr;
+		delete _autor; _autor = nullptr;
+	}
+	//Funkciju za izmjenu popularnosti komentara
+	void IzmjenaPopularnosti(int novaPopularnost) {
+		_popularnost = novaPopularnost;
+	}
+	void DodajPopularnost(int lajk) {
+		_popularnost += lajk;
+	}
+
+	void SmanjiPopularnost(int dislajk) {
+		_popularnost -= dislajk;
+	}
+
+	//Funkciju Info
+	void Info() {
+		cout << "Autor komentara: " << _autor->GetKorisnickoIme() << endl;
+		cout << "Komentar -> " << _tekst << endl << "Popularnost komentara -> " << _popularnost << endl;
+		cout << "Datum komentarisanja -> ";
+		_datum.Info();
+		cout <<endl<< "Vrijeme komentarisanja -> ";
+		_satnica.Info();
+	}
+
+	Komentar GetKomentar(const char* tekst, const Datum& datum, const Vrijeme& satnica, int popularnost, const Korisnik& autor)const {
+		Komentar novi(tekst, datum, satnica, popularnost, autor);
+		return novi;
+	}
+
+
+	const char* GetTekst()const { return _tekst; }
+	const Datum GetDatum() const { return _datum; }
+	const Vrijeme GetVrijeme() const { return _satnica; }
+	const int GetPopularnost() const { return _popularnost; }
+	const Korisnik GetAutor() const { return *_autor; }
+	void SetTekst(const char* sadrzaj) {
+		int vel = strlen(sadrzaj) + 1;
+		delete[] _tekst;
+		_tekst = new char[vel];
+		strcpy_s(_tekst, vel, sadrzaj);
+	}
+	void Kopiraj(const Komentar& novi) {
+		delete[] _tekst;
+		int vel = strlen(novi._tekst) + 1;
+		_tekst = new char[vel];
+		strcpy_s(_tekst, vel, novi._tekst);
+		_datum = novi._datum;
+		_satnica = novi._satnica;
+		_popularnost = novi._popularnost;
+		delete _autor;
+		_autor = new Korisnik(novi._autor->GetIme(),novi._autor->GetKorisnickoIme(),novi._autor->GetLozinka(),novi._autor->GetTipKorisnika());
+	}
+
+};
+
+class Clanak
+{
+	char _naslov[150];
+	char* _sadrzaj;
+	Datum _datum;
+	Vrijeme _satnica;
+	int _brojPregleda;
+	char* _tagovi[10];
+	char _oblast[100];
+	Korisnik* _autor;
+	Komentar* _komentari;
+	int _brojKomentara;
+
+public:
+
+
+	Clanak(const char* naslov, const char* sadrzaj, const Datum& datum, const Vrijeme& satnica,
+		const char* oblast, const Korisnik& autor) {
+		strcpy_s(_naslov, naslov);
+		_sadrzaj = new char[strlen(sadrzaj) + 1];
+		strcpy_s(_sadrzaj, strlen(sadrzaj) + 1, sadrzaj);
+		_datum = datum;
+		_satnica = satnica;
+		_brojPregleda = 0;
+		_tagovi[10] = { nullptr };
+		strcpy_s(_oblast, oblast);
+		_autor = new Korisnik(autor.GetIme(), autor.GetKorisnickoIme(), autor.GetLozinka(), autor.GetTipKorisnika());
+		_brojKomentara = 0;
+		_komentari = nullptr;
+
+	}
+	Clanak() {
+
+		strcpy_s(_naslov, nullptr);
+		_sadrzaj = nullptr;
+		_brojPregleda = 0;
+		_tagovi[10] = { nullptr };
+		strcpy_s(_oblast, nullptr);
+		_autor = nullptr;
+		_komentari = nullptr;
+		_brojKomentara = 0;
+	}
+	//Funkciju za dodavanje tagova za clanak
+	bool DodajTag(const char* sadrzaj) {
+		int indeks = 0;
+		for (int i = 0; i < 10; i++) {
+			if (_tagovi[i] != nullptr) {
+				if (strcmp(_tagovi[i], sadrzaj) == 0)
+					return false;
+			}
+			else {
+				indeks = i;
+				break;
+			}
+		}
+		int vel = strlen(sadrzaj) + 1;
+		_tagovi[indeks] = new char[vel];
+		strcpy_s(_tagovi[indeks], vel, sadrzaj);
+		return true;
+	}
+
+
+	/*Funkciju za promjenu sadržaja i vremena promjene clanka. Kao verifikaciju dozvole potrebno je proslijediti korisnicko ime
+	autora clanka.
+	Samo kreator clanka ima permisije da mijenja njegov sadržaj.
+	*/
+	 
+	bool EditContentAndTime(const char* noviSadrzaj,const Vrijeme &novoVrijeme) {
+		if (!_autor->Validacija()) {
+			cout << crt << "Unijeli ste pogresnu sifru. Nemate permisije na ovom clanku." << crt;
+			return false;
+		}
+		delete[] _sadrzaj;
+		int vel = strlen(noviSadrzaj) + 1;
+		_sadrzaj = new char[vel];
+		strcpy_s(_sadrzaj, vel, noviSadrzaj);
+		_satnica = novoVrijeme;
+		return true;	
+	}
+
+	//Funkciju za dodavanje komentara
+	void DodajKomentar(const Komentar& noviKomentar) {
+		Komentar* temp = new Komentar[_brojKomentara + 1];
+		for (int i = 0; i < _brojKomentara; i++) 
+			temp[i].Kopiraj(_komentari[i]);
+
+		temp[_brojKomentara].Kopiraj(noviKomentar);
+		delete[] _komentari;
+		_komentari = temp;
+		_brojKomentara++;
+	}
+
+
+	//Funkciju Info
+	void Info() {
+		cout << crt << "\t\t" << _naslov << crt << "Oblast -> " << _oblast << crt;
+		cout << _sadrzaj << crt;
+		cout << "Vrijeme objave: "; _satnica.Info();
+		cout << "Datum objave: "; _datum.Info(); cout << crt;
+		cout << "Komentari:"<<crt;
+		for (int i = 0; i < _brojKomentara; i++) {
+			cout << i + 1 << ". komentar "<<crt;
+			_komentari[i].Info();
+			cout << crt;
+		}
+		cout << "Tagovi: ";
+		for (int i = 0; i < 10; i++) {
+			if (_tagovi[i] != nullptr)
+				cout << _tagovi[i] << ",";
+		}
+		cout << crt;
+	}
+	
+};
+
+int main()
+{
+	//Kreirati testni program koji demonstrira implementirane funckionalnosti
+	Vrijeme vrijeme1(10, 15, 29);
+	Vrijeme vrijeme2(14, 52, 10);
+	Vrijeme vrijeme3(20, 0, 37);
+	Vrijeme vrijeme4(22, 33, 12);
+
+	Datum datum1(5, 2, 2017);
+	Datum datum2(17, 11, 2017);
+	Datum datum3(2, 8, 2018);
+	Datum datum4(29, 9, 2018);
+
+	Korisnik korisnik1("Aldin Talic", "TalicniTom", "talicnitom123", Administrator);
+	Korisnik korisnik2("Dinko Avdispahic", "Dinkesa", "dinkesa123", Administrator);
+	Korisnik korisnik3("Nedim Kurtovic", "Necko", "necko123", Administrator);
+	Korisnik Guest1("Guest1", "guest1", "nemalozinke", Guest);
+	Korisnik Guest2("Guest2", "guest2", "nemalozinke", Guest);
+
+
+
+	Komentar komentar1("Veoma poucan clanak, bravo!", datum1, vrijeme1, 0, Guest2);
+	Komentar komentar2("Dosta sam naucio citajuci ovo, preporuka svima.", datum2, vrijeme2, 0, Guest1);
+	Komentar komentar3("Ne slazem se u potpunosti, sve u svemu, clanak nije toliko los.", datum3, vrijeme3, 0, korisnik3);
+
+	komentar1.IzmjenaPopularnosti(9);
+	komentar2.IzmjenaPopularnosti(22);
+	komentar3.IzmjenaPopularnosti(4);
+
+	Clanak clanak("Linux OS",
+		"Linux je  operativni  sistem za  racunare i\n"
+		"njegovo jezgro. Jedan  je  od najpoznatijih\n"
+		"primjera slobodnog softvera i razvoja putem\n"
+		"otvorenog   koda.",datum3, vrijeme3, "Racunarstvo",
+		korisnik1);
+
+	if (clanak.DodajTag("Informatika"))
+		cout << crt << "Tag uspjesno dodan na clanak." << crt;
+	else
+		cout << crt << "Tag nije uspjesno dodan." << crt;
+	if (clanak.DodajTag("Operativni sistemi"))
+		cout << crt << "Tag uspjesno dodan na clanak." << crt;
+	else
+		cout << crt << "Tag nije uspjesno dodan." << crt;
+	if (clanak.DodajTag("Zanimljivosti"))
+		cout << crt << "Tag uspjesno dodan na clanak." << crt;
+	else
+		cout << crt << "Tag nije uspjesno dodan." << crt;
+
+	clanak.DodajKomentar(komentar1);
+	clanak.DodajKomentar(komentar2);
+	clanak.DodajKomentar(komentar3);
+	clanak.Info();
+
+	//korisnik1.PromjenaLozinke();
+
+	if (clanak.EditContentAndTime("Linux je  operativni  sistem za  racunare i\n"
+		"njegovo jezgro. Jedan  je  od najpoznatijih\n"
+		"primjera slobodnog softvera i razvoja putem\n"
+		"otvorenog   koda.  Za  razliku   od  drugih\n"
+		"operativnih sistema(kao na primjer Windowsa\n"
+		"i Mac OSa)njegov kod je dostupan javnosti i\n"
+		"svako  ima pravo  da  ga  slobodno  koristi,\n"
+		"mjenja i redistribuira.", vrijeme4))
+		cout << crt << "Sadrzaj i vrijeme su uspjesno editovani." << crt;
+
+	clanak.Info();
+
+
+	system("pause>0");
+	return 0;
+}
+
+
+
+
+
