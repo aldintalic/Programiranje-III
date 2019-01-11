@@ -1,0 +1,395 @@
+#include<iostream>
+using namespace std;
+
+auto crt = "\n-------------------------------------------------\n";
+
+char * AlocirajNizKaraktera(const char * sadrzaj) {
+	if (sadrzaj == nullptr)
+		return nullptr;
+	int vel = strlen(sadrzaj) + 1;
+	char * temp = new char[vel];
+	strcpy_s(temp, vel, sadrzaj);
+	return temp;
+}
+
+template <class T1, class T2, int max>
+class Kolekcija
+{
+	T1 _elementi1[max];
+	T2 _elementi2[max];
+	int _trenutno;
+public:
+	//Implementirati potrebne funkcije za rad sa kolekcijom
+	Kolekcija() : _trenutno(0) {}
+
+	void AddElement(T1 el1, T2 el2)
+	{
+		if (_trenutno == max)
+			return;
+
+		_elementi1[_trenutno] = el1;
+		_elementi2[_trenutno++] = el2;
+
+	}
+	int GetTrenutno() { return _trenutno; }
+	T1* GetElementi1() { return _elementi1; }
+	T2* GetElementi2() { return _elementi2; }
+	void Reset() {_trenutno = 0;}
+	friend ostream& operator<<<>(ostream&, const Kolekcija&);
+};
+
+template <class T1, class T2, int max>
+ostream& operator<<<>(ostream& cout, const Kolekcija<T1, T2, max>& k)
+{
+	for (size_t i = 0; i < k._trenutno; i++)
+	{
+		cout << k._elementi1[i] << " " << " " << k._elementi2[i] << endl;
+	}
+
+	return cout;
+}
+
+class Ispit{
+protected:
+	char* _predmet;
+	char _datumOdrzavanja[12];
+	char _vrijemeOdrzavanja[6]; // pocetak ispita
+	int _trajanje; //trajanje ispita u minutama
+	int _maxBrojBodova;
+	double _rezultat; //procentualni rezultat ispita
+	void Kopiraj(const Ispit& original){
+		_predmet = AlocirajNizKaraktera(original._predmet);
+
+		strncpy_s(_datumOdrzavanja, original._datumOdrzavanja, _TRUNCATE);
+		strncpy_s(_vrijemeOdrzavanja, original._vrijemeOdrzavanja, _TRUNCATE);
+
+		_trajanje = original._trajanje;
+		_rezultat = original._rezultat;
+		_maxBrojBodova = original._maxBrojBodova;
+	}
+public:
+	Ispit(const char* predmet, const char* datumOdrzavanja, const char* vrijemeOdrzavanja, int trajanje)
+	{
+		_predmet = AlocirajNizKaraktera(predmet);
+
+		strncpy_s(_datumOdrzavanja, datumOdrzavanja, _TRUNCATE);
+		strncpy_s(_vrijemeOdrzavanja, vrijemeOdrzavanja, _TRUNCATE);
+
+		_trajanje = trajanje;
+		_rezultat = 0;
+		_maxBrojBodova = 0;
+	}
+	Ispit() {
+		_predmet = nullptr;
+		strncpy_s(_datumOdrzavanja, "NOT SET", _TRUNCATE);
+		strncpy_s(_vrijemeOdrzavanja, "NOT SET", _TRUNCATE);
+		_trajanje = 0;
+		_rezultat = 0;
+		_maxBrojBodova = 0;
+
+	}
+	Ispit(const Ispit& original){
+		Kopiraj(original);
+	}
+	Ispit& operator=(const Ispit& original) {
+		if (this != &original) {
+			delete[] _predmet;
+			Kopiraj(original);
+		}
+		return *this;
+	}
+	virtual ~Ispit(){
+		delete[] _predmet;
+		_predmet = NULL;
+	}
+
+	void Info(){
+		cout << "Predmet: " << _predmet << endl;
+		cout << "Termin ispita: " << _datumOdrzavanja << " u " << _vrijemeOdrzavanja << endl;
+		cout << "Trajanje: " << _trajanje << endl;
+		cout << "Maksimalan broj bodova: " << _maxBrojBodova << endl;
+		cout << "Rezultat: " << _rezultat << endl;
+	}
+	friend ostream& operator<<(ostream& ispis, const Ispit& ispit) {
+		ispis<< "Predmet: " << ispit._predmet << endl;
+		ispis<< "Termin ispita: " << ispit._datumOdrzavanja << " u " << ispit._vrijemeOdrzavanja << endl;
+		ispis<< "Trajanje: " << ispit._trajanje << endl;
+		ispis<< "Maksimalan broj bodova: " << ispit._maxBrojBodova << endl;
+		ispis<< "Rezultat: " << ispit._rezultat << endl;
+		return ispis;
+	}
+};
+
+
+class PismeniIspit:public Ispit{
+	Kolekcija<char*, int, 50>* _pitanja; //kolekcija pitanja sa brojem bodova
+	Kolekcija<char*, int, 50> _odgovori; //kolekcija odgovora sa brojem osvojenih bodova
+	int _brTacnihOdgovora;
+	int _brOsvojenihBodova;
+	void Kopiraj( PismeniIspit& original){
+		_pitanja = new Kolekcija<char*, int, 50>();
+		for (int i = 0; i < original._pitanja->GetTrenutno(); i++)
+			_pitanja->AddElement(AlocirajNizKaraktera(original._pitanja->GetElementi1()[i]), original._pitanja->GetElementi2()[i]);
+		for (int i = 0; i < original._odgovori.GetTrenutno(); i++)
+			_odgovori.AddElement(AlocirajNizKaraktera(original._odgovori.GetElementi1()[i]), original._odgovori.GetElementi2()[i]);
+		_brTacnihOdgovora = original._brTacnihOdgovora;
+		_brOsvojenihBodova= original._brOsvojenihBodova;
+	}
+	void Dealociraj() {
+		for (int i = 0; i < _pitanja->GetTrenutno(); i++) {
+			delete[] _pitanja->GetElementi1()[i];
+			_pitanja->GetElementi1()[i] = nullptr;
+		}
+		_pitanja->Reset();
+		delete _pitanja; _pitanja = nullptr;
+
+		for (int i = 0; i < _odgovori.GetTrenutno(); i++) {
+			delete[] _odgovori.GetElementi1()[i];
+			_odgovori.GetElementi1()[i] = nullptr;
+		}
+		_odgovori.Reset();
+	}
+public:
+	//Konstruktor i destruktor funkcije
+	PismeniIspit(const char* predmet, const char* datumOdrzavanja, const char* vrijemeOdrzavanja, int trajanje)
+		:Ispit(predmet,datumOdrzavanja,vrijemeOdrzavanja,trajanje){
+		_brOsvojenihBodova = 0;
+		_brTacnihOdgovora= 0;
+		_pitanja = new Kolekcija<char*, int, 50>();
+	}
+	PismeniIspit() {
+		_pitanja = new Kolekcija<char*,int,50>();
+		_brTacnihOdgovora = 0;
+		_brOsvojenihBodova= 0;
+	}
+	~PismeniIspit(){
+		Dealociraj();
+	}
+
+	//Konstruktor kopije
+	PismeniIspit(PismeniIspit& original):Ispit(original){
+		Kopiraj(original);
+	}
+	PismeniIspit& operator=(PismeniIspit& original) {
+		if (this != &original) {
+			Dealociraj();
+			Ispit::operator=(original);
+			Kopiraj(original);
+		}
+		return *this;
+	}
+
+	//Operator() za dodavanje pitanja u kolekciju uz pripadajuci broj bodova.
+	//Ispit ne smije sadr�avati ista pitanja. Broj bodova na jednom pitanju ne smije biti negativan.
+	bool DaLiPostojiPitanje(const char* pitanje) {
+		for (int i = 0; i < _pitanja->GetTrenutno(); i++)
+			if (strcmp(_pitanja->GetElementi1()[i], pitanje) == 0)
+				return true;
+		return false;
+	}
+	bool operator()(const char* pitanje, int bodovi) {
+		if (DaLiPostojiPitanje(pitanje))
+			return false;
+		_pitanja->AddElement(AlocirajNizKaraktera(pitanje), bodovi);
+		return true;
+	}
+
+
+	//Operator+= za dodavanje odgovora na pitanje. Odgovori se dodaju u redoslijedu dodavanja pitanja.
+	//Broj osvojenih bodova se inicijalno postavlja na 0. Moguce je dodati i prazan tekst kao odgovor.
+	bool operator+=(const char* odgovor) {
+		_odgovori.AddElement(AlocirajNizKaraktera(odgovor), 0);
+		return true;
+
+	}
+
+
+	//Funkciju za ocjenu tacnog odgovora koja kao parametar prima redni broj pitanja u kolekciji i tacan odgovor. 
+	//Funkcija treba da pronade odgovor na tra�eno pitanje, te da taj odgovor uporedi sa tacnim odgovorom i postavi
+	//osvojene bodove. Student mo�e osvojiti 0 ili maksimalan broj bodova na pitanju. U skladu sa rezultatom
+	//provjere postaviti vrijednosti odgovarajucih atributa.
+	bool OcijeniPitanje(const char* odgovor, int lokacija) {
+		if (!DaLiPostojiPitanje(_pitanja->GetElementi1()[lokacija]))
+			return false;
+		if (strcmp(_odgovori.GetElementi1()[lokacija], odgovor) == 0) {
+			_brTacnihOdgovora++;
+			_odgovori.GetElementi2()[lokacija] = _pitanja->GetElementi2()[lokacija];
+			_brOsvojenihBodova += _pitanja->GetElementi2()[lokacija];
+		}
+		return true;
+	}
+
+	void SetMaxBodova() {
+		for (int i = 0; i < _pitanja->GetTrenutno(); i++)
+			_maxBrojBodova += _pitanja->GetElementi2()[i];
+	}
+	void SetRezultat() {
+		_rezultat = _brOsvojenihBodova*1.0 / _maxBrojBodova * 100;
+	}
+	friend ostream& operator<<(ostream& ispis, const PismeniIspit& pismeni);
+	float GetMaxBodova() { return _maxBrojBodova; }
+	float GetRezultat() { return _rezultat; }
+};
+ostream& operator<<(ostream& ispis, const PismeniIspit& pismeni){
+	static_cast<Ispit>(pismeni).Info();
+	ispis << "Pitanja: " << crt;
+	ispis << *pismeni._pitanja << endl;
+	ispis << "Odgovori:" << crt;
+	ispis << pismeni._odgovori << endl;
+	ispis << "Broj osvojenih bodova: " << pismeni._brOsvojenihBodova << endl;
+	ispis << "Broj tacnih odgovora: " << pismeni._brTacnihOdgovora << endl;
+	return ispis;
+}
+class PrakticniIspit:public Ispit
+{
+	Kolekcija<char*, char*, 3> _alati; //potrebni alati i njihove verzije, npr. alat "Visual Studio", verzija "2017"
+	char* _zadatak; //tekst zadatka
+	bool _zadovoljeno; //true ako je student zadovoljio na ispitu, u suprotnom false
+public:
+	//Na osnovu prethodne implementacije klase PismeniIspit osmisliti i implementirati
+	//potrebne funkcije za rad sa klasom PrakticniIspit.
+	PrakticniIspit(const char* predmet, const char* datumOdrzavanja, const char* vrijemeOdrzavanja, int trajanje, const char* zadatak)
+		:Ispit(predmet, datumOdrzavanja, vrijemeOdrzavanja, trajanje) {
+		_zadatak = AlocirajNizKaraktera(zadatak);
+		_zadovoljeno = false;
+	}
+	PrakticniIspit(PrakticniIspit& original) :Ispit(original) {
+		for (int i = 0; i < original._alati.GetTrenutno(); i++)
+			_alati.AddElement(AlocirajNizKaraktera(original._alati.GetElementi1()[i]), AlocirajNizKaraktera(original._alati.GetElementi2()[i]));
+		_zadatak = AlocirajNizKaraktera(original._zadatak);
+		_zadovoljeno = original._zadovoljeno;
+	}
+	PrakticniIspit() { _zadatak = nullptr; _zadovoljeno = false; }
+	~PrakticniIspit(){
+		for (int i = 0; i < _alati.GetTrenutno(); i++){
+			delete[] _alati.GetElementi1()[i]; _alati.GetElementi1()[i] = nullptr;
+			delete[] _alati.GetElementi2()[i]; _alati.GetElementi2()[i] = nullptr;
+		}
+	}
+	bool Provjera(const char* alat, const char* verzija) {
+		for (int i = 0; i < _alati.GetTrenutno(); i++){
+			if (strcmp(_alati.GetElementi1()[i], alat) == 0 && strcmp(_alati.GetElementi2()[i], alat) == 0)
+				return true;
+		}
+		return false;
+	}
+	bool DodajAlat(const char* alat, const char* verzija) {
+		if (Provjera(alat, verzija))
+			return false;
+		_alati.AddElement(AlocirajNizKaraktera(alat), AlocirajNizKaraktera(verzija));
+		return true;
+
+	}
+	void SetZadovoljio() { _zadovoljeno = true; }
+};
+
+int main()
+{
+	//Testirati sve dostupne funkcionalnosti putem datih kolekcija.
+	//Drugi parametar kolekcije predstavlja broj indeksa studenta.
+
+	Kolekcija<PismeniIspit, char*, 100> _pismeniIspiti;
+	Kolekcija<PrakticniIspit, char*, 100> _prakticniIspiti;
+
+#pragma region PismeniIspit
+
+	Ispit PRIII("Programiranje III","07.12.2018","10:00",90),
+		  BPI("Baze podataka I", "05.12.2018", "11:00", 60),
+		  ASP("Algoritmi i strukture podataka", "10.12.2018", "10:30", 90);
+	
+	PismeniIspit PRIII_Pismeni("Programiranje III", "07.12.2018", "10:00", 90),
+				 BPI_Pismeni("Baze podataka I", "05.12.2018", "11:00", 60),
+				 ASP_Pismeni("Algoritmi i strukture podataka", "10.12.2018", "10:30", 90);
+	_pismeniIspiti.AddElement(PRIII_Pismeni, AlocirajNizKaraktera("IB170067"));
+	_pismeniIspiti.AddElement(BPI_Pismeni, AlocirajNizKaraktera("IB170065"));
+	_pismeniIspiti.AddElement(ASP_Pismeni, AlocirajNizKaraktera("IB170011"));
+	cout << _pismeniIspiti << crt;
+
+	if (_pismeniIspiti.GetElementi1()[0]("Sta je klasa ?", 3))
+		cout << "Pitanje uspjesno dodano" << endl;
+	if (!_pismeniIspiti.GetElementi1()[0]("Sta je klasa ?", 3))
+		cout << "Pitanje nije uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[0]("Sta je invarijanta ?", 5))
+		cout << "Pitanje uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[0]("Objasniti nasljedjivanje i polimorfizam.", 10))
+		cout << "Pitanje uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[1]("Sta je gerund ?", 4))
+		cout << "Pitanje uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[1]("Koji su tipovi preslikavanja IS_A hijerarhije ?", 4))
+		cout << "Pitanje uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[2]("Objasniti kako radi radix sort.", 8))
+		cout << "Pitanje uspjesno dodano" << endl;
+
+	if (_pismeniIspiti.GetElementi1()[0] += "Klasa je apstraktni tip podatka")
+		cout << "Odgovor uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[0] += "Invarijanta ju uslov koji uvijek mora biti zadovoljen i vezana je za cijelu klasu")
+		cout << "Odgovor uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[0] += " ")
+		cout << "Odgovor uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[1] += " ")
+		cout << "Odgovor uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[1] += "totalno, disjunktivno, parcijalno, presjecno")
+		cout << "Odgovor uspjesno dodano" << endl;
+	if (_pismeniIspiti.GetElementi1()[2] += "sortira po ciframa")
+		cout << "Odgovor uspjesno dodano" << endl;
+
+	_pismeniIspiti.GetElementi1()[0].OcijeniPitanje("Klasa je apstraktni tip podatka", 0);
+	_pismeniIspiti.GetElementi1()[0].OcijeniPitanje("Invarijanta ju uslov koji uvijek mora biti zadovoljen i vezana je za cijelu klasu", 1);
+	_pismeniIspiti.GetElementi1()[0].OcijeniPitanje("Nasljedjivanje i polimorfizam ...", 2);
+	_pismeniIspiti.GetElementi1()[1].OcijeniPitanje("Gerund je tip poveznika koji moze biti i entitet", 0);
+	_pismeniIspiti.GetElementi1()[1].OcijeniPitanje("totalno, disjunktivno, parcijalno, presjecno", 1);
+	_pismeniIspiti.GetElementi1()[2].OcijeniPitanje("Radix sort...", 0);
+
+	for (int i = 0; i < _pismeniIspiti.GetTrenutno(); i++) {
+		_pismeniIspiti.GetElementi1()[i].SetMaxBodova();
+		_pismeniIspiti.GetElementi1()[i].SetRezultat();
+	}
+
+	cout << _pismeniIspiti << crt;
+
+	for (int i = 0; i < _pismeniIspiti.GetTrenutno(); i++) {
+		cout << i + 1 << ". ISPIT" << endl;
+		cout << "Maximalno bodova: " << _pismeniIspiti.GetElementi1()[i].GetMaxBodova() << endl;
+		cout << "Rezultat: " << _pismeniIspiti.GetElementi1()[i].GetRezultat() << "%";
+		cout << crt;
+	}
+#pragma endregion
+
+#pragma region PrakticniIspit
+
+	PrakticniIspit PRIII_Prakticni("Programiranje III", "07.12.2018", "10:00", 90, "Napraviti tri klase, te implementirati nasljedjivanje.");
+	PrakticniIspit BPI_Prakticni("Baze podataka I", "05.12.2018", "11:00", 60, "Napraviti relacionu bazu podatakaza studentsku sluzbu.");
+
+	_prakticniIspiti.AddElement(PRIII_Prakticni, AlocirajNizKaraktera("IB170067"));
+	_prakticniIspiti.AddElement(BPI_Prakticni, AlocirajNizKaraktera("IB170065"));
+
+	if (_prakticniIspiti.GetElementi1()[0].DodajAlat("Visual Studio", "2015"))
+		cout << "Alat uspjesno dodan." << endl;
+	if (_prakticniIspiti.GetElementi1()[0].DodajAlat("Visual Studio", "2017"))
+		cout << "Alat uspjesno dodan." << endl;
+	if (_prakticniIspiti.GetElementi1()[1].DodajAlat("MS Access", "2017"))
+		cout << "Alat uspjesno dodan." << endl;
+	if (_prakticniIspiti.GetElementi1()[1].DodajAlat("Libre Office", "2016"))
+		cout << "Alat uspjesno dodan." << endl;
+
+	_prakticniIspiti.GetElementi1()[0].SetZadovoljio();
+
+
+#pragma endregion
+
+
+	for (int i = 0; i < _pismeniIspiti.GetTrenutno(); i++) {
+		delete[] _pismeniIspiti.GetElementi2()[i];
+		_pismeniIspiti.GetElementi2()[i] = nullptr;
+	}
+
+	for (int i = 0; i < _prakticniIspiti.GetTrenutno(); i++) {
+		delete[] _prakticniIspiti.GetElementi2()[i];
+		_prakticniIspiti.GetElementi2()[i] = nullptr;
+	}
+
+
+	system("pause>0");
+	return 0;
+ }
+
