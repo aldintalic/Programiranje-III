@@ -1,0 +1,519 @@
+#include<iostream>
+using namespace std;
+
+char * AlocirajNizKaraktera(const char * sadrzaj) {
+	if (sadrzaj == nullptr)
+		return nullptr;
+	int vel = strlen(sadrzaj) + 1;
+	char * temp = new char[vel];
+	strcpy_s(temp, vel, sadrzaj);
+	return temp;
+}
+const char crt[] = { "\n---------------------------------------------------------\n" };
+class Datum
+{
+	int _dan;
+	int _mjesec;
+	int _godina;
+public:
+	Datum(int d, int m, int g) : _dan(d), _mjesec(m), _godina(g) {}
+	Datum() : _dan(1), _mjesec(1), _godina(1900) {}
+	void Info()
+	{
+		cout << _dan << "." << _mjesec << "." << _godina << endl;
+	}
+	int GetDan() const{ return _dan; }
+	int GetMjesec() const { return _mjesec; }
+	int GetGodina() const { return _godina; }
+	bool Provjera(const Datum& pocetak, const Datum& kraj) {
+		int poc = pocetak._godina * 10000 + pocetak._mjesec * 100 + pocetak._dan;
+		int kr = kraj._godina * 10000 + kraj._mjesec * 100 + kraj._dan;
+		int trenutni = _godina * 10000 + _godina * 100 + _dan;
+		if (trenutni > poc && trenutni < kr)
+			return true;
+		return false;
+	}
+	bool JeLiJednako(const Datum& datum) {return(_dan == datum._dan && _mjesec== datum._mjesec && _godina== datum._godina);}
+
+};
+
+enum TipNaplate { PoOsobi, Jednokratno, PoNocenju };
+class Usluga
+{
+	char* _naziv;
+	double _cijena;
+	TipNaplate _tipNaplate;
+public:
+	Usluga() : _naziv(nullptr), _cijena(0), _tipNaplate(TipNaplate(0)) {}
+	Usluga(const char* naziv, int cijena, TipNaplate tipNaplate) :
+		_cijena(cijena), _tipNaplate(tipNaplate)
+	{
+		_naziv = AlocirajNizKaraktera(naziv);
+	}
+	Usluga(const Usluga& usluga) :
+		_cijena(usluga._cijena), _tipNaplate(usluga._tipNaplate)
+	{
+		_naziv = AlocirajNizKaraktera(usluga._naziv);
+	}
+
+	~Usluga()
+	{
+		delete[] _naziv;
+		_naziv = nullptr;
+	}
+
+	void Info()
+	{
+		cout << _naziv <<"\t\t\t\t"<< _cijena << endl;
+	}
+	Usluga &operator= (const Usluga& usluga) {
+		_cijena = usluga._cijena;
+		_tipNaplate = usluga._tipNaplate;
+		_naziv = AlocirajNizKaraktera(usluga._naziv);
+		return *this;
+	}
+	void Kopiraj(const Usluga &usluga) {
+		delete[] _naziv;
+		_naziv = new char[strlen(usluga._naziv) + 1];
+		strcpy_s(_naziv, strlen(usluga._naziv) + 1, usluga._naziv);
+		_cijena = usluga._cijena;
+		_tipNaplate = usluga._tipNaplate;
+	}
+	double GetCijena() { return _cijena; }
+};
+
+enum TipSmjestaja { StudioApartman, SingleRoom, DoubleRoom, SuperiorApartman };
+const char* TipSmjestajaString[] = { "StudioApartman", "SingleRoom", "DoubleRoom", "SuperiorApartman" };
+
+class Smjestaj
+{
+	int _broj; //Broj sobe, apartmana
+	TipSmjestaja* _tipSmjestaja;
+	int _maxBrojOsoba;
+	double _cijenaPoOsobi;
+public:
+	Smjestaj(int broj, TipSmjestaja tip, int maxBrojOsoba, double cijenaPoOsobi) :
+		_broj(broj), _tipSmjestaja(new TipSmjestaja(tip)), _maxBrojOsoba(maxBrojOsoba), _cijenaPoOsobi(cijenaPoOsobi)
+	{
+	}
+	Smjestaj() :_broj(0), _tipSmjestaja(nullptr), _maxBrojOsoba(0), _cijenaPoOsobi(0) {}
+
+	Smjestaj(const Smjestaj &smjestaj) {
+		_broj = smjestaj._broj;
+		_tipSmjestaja = new TipSmjestaja(*smjestaj._tipSmjestaja);
+		_maxBrojOsoba = smjestaj._maxBrojOsoba;
+		_cijenaPoOsobi = smjestaj._cijenaPoOsobi;
+		
+	}
+	
+	~Smjestaj()
+	{
+		delete _tipSmjestaja;
+		_tipSmjestaja = nullptr;
+	}
+
+	void Info() const
+	{
+		cout << "Broj sobe: " << _broj << endl;
+		cout << "Tip smjestaja: " << TipSmjestajaString[*_tipSmjestaja] << endl;
+		cout << "Kapacitet smjestaja: " << _maxBrojOsoba << endl;
+		cout << "Cijena po osobi: " << _cijenaPoOsobi << endl;
+
+	}
+	int GetBrojSobe()const { return _broj; }
+	int GetMaxBrojOsoba()const { return _maxBrojOsoba; }
+	void Kopiraj(const Smjestaj& smjestaj) {
+		_broj = smjestaj._broj;
+		delete _tipSmjestaja;
+		_tipSmjestaja = new TipSmjestaja(*smjestaj._tipSmjestaja);
+		_maxBrojOsoba = smjestaj._maxBrojOsoba;
+		_cijenaPoOsobi = smjestaj._cijenaPoOsobi;
+	}
+	double GetCijenaPoOsobi() { return _cijenaPoOsobi; }
+};
+
+class Gost
+{
+	char* _imePrezime;
+	char* _kontakTelefon;
+public:
+	Gost(const char* imePrezime, const char* kontaktTelefon)
+	{
+		_imePrezime = AlocirajNizKaraktera(imePrezime);
+		_kontakTelefon = AlocirajNizKaraktera(kontaktTelefon);
+	}
+	Gost(const Gost& gost)
+	{
+		_imePrezime = AlocirajNizKaraktera(gost._imePrezime);
+		_kontakTelefon = AlocirajNizKaraktera(gost._kontakTelefon);
+	}
+	~Gost() {
+		delete[] _imePrezime; _imePrezime = nullptr;
+		delete[] _kontakTelefon; _kontakTelefon = nullptr;
+
+	}
+	void Info()
+	{
+		cout << "Ime i prezime: " << _imePrezime << endl;
+		cout << "Kontakt telefon: " << _kontakTelefon << endl;
+	}
+
+};
+
+enum StatusRezervacije { Aktivna, Potvrdjena, BoravakUToku, Otkazana };
+class Rezervacija
+{
+	Datum _pocetakBoravka;
+	Datum _krajBoravka;
+	Gost* _gost; //Gost koji je rezervisao smje�taj
+	Smjestaj _smjestaj;
+	int _brojOsoba; //Ukupan broj osoba koji boravi u smjestaju
+	Usluga* _usluge; //Dodatne usluge koje je gost koristio tokom boravka
+	int _brojUsluga;
+	double _ukupanIznos;
+	StatusRezervacije _status;
+public:
+	Rezervacija(const Datum &pocetak, const Datum &kraj, const Gost &gost, const Smjestaj &smjestaj, int brojOsoba) :
+		_pocetakBoravka(pocetak), _krajBoravka(kraj),
+		_smjestaj(smjestaj), _brojOsoba(brojOsoba) {
+		_gost = new Gost(gost);
+		_usluge = nullptr;
+		_brojUsluga = 0;
+		_ukupanIznos = _brojOsoba * _smjestaj.GetCijenaPoOsobi();
+		_status = Aktivna;
+	}
+	Rezervacija():_pocetakBoravka(0,0,0), _krajBoravka(0, 0, 0),_gost(nullptr),_smjestaj(),_brojOsoba(0),_usluge(nullptr),
+	_brojUsluga(0),_ukupanIznos(0),_status() { }
+	~Rezervacija() {
+		delete _gost; _gost = nullptr;
+		delete[] _usluge; _usluge = nullptr;
+	}
+
+	void RezervisiUslugu(const Usluga& u)
+	{
+		Usluga* temp = new Usluga[_brojUsluga + 1];
+		for (size_t i = 0; i < _brojUsluga; i++)
+		{
+			temp[i] = _usluge[i];
+		}
+
+		delete[] _usluge;
+		_usluge = temp;
+
+		_usluge[_brojUsluga++] = u;
+	}
+	Datum GetPocetakBoravka()const  { return _pocetakBoravka; }
+	Datum GetKrajBoravka() const { return _krajBoravka; }
+	StatusRezervacije GetStatus() { return _status; }
+	int GetBrojOsoba()const { return _brojOsoba; }
+	void Info() {
+		cout <<endl<< "Pocetak boravka: ";
+		_pocetakBoravka.Info();
+		cout << "Kraj boravka: ";
+		_krajBoravka.Info();
+		_gost->Info();
+		_smjestaj.Info();
+		cout << "Broj osoba u smjestaju: " << _brojOsoba << endl;
+		for (int i = 0; i < _brojUsluga; i++)
+			_usluge[i].Info();
+		cout << "Status rezervacije -> " << _status << endl;
+		cout << "Ukupan iznos: " << _ukupanIznos << endl;
+	}
+	Smjestaj GetSmjestaj() const { return _smjestaj; }
+	void Kopiraj(const Rezervacija& rezervacija) {
+		_pocetakBoravka = rezervacija._pocetakBoravka;
+		_krajBoravka= rezervacija._krajBoravka;
+		delete _gost;
+		_gost = new Gost(*rezervacija._gost);
+		_smjestaj.Kopiraj(rezervacija._smjestaj);
+		_brojOsoba = rezervacija._brojOsoba;
+		_brojUsluga = rezervacija._brojUsluga;
+		delete[] _usluge;
+		_usluge = new Usluga[_brojUsluga];
+		for (int i = 0; i < _brojUsluga; i++)
+			_usluge[i].Kopiraj(rezervacija._usluge[i]);
+		_ukupanIznos = rezervacija._ukupanIznos;
+		_status = rezervacija._status;
+		
+	}
+	void SetStatus(StatusRezervacije status) {	if(status>=0 && status<=3) _status = status;}
+	double GetUkupanIznos() { return _ukupanIznos; }
+	int GetBrojUsluga() { return _brojUsluga; }
+	Usluga* GetUsluge() { return _usluge; }
+};
+class Hotel
+{
+	char* _naziv;
+	//Ponuda smje�taja
+	Smjestaj* _smjestaji;
+	int _brojSmjestaja;
+	//Rezervacije hotela (protekle, aktivne i nadolazece)
+	Rezervacija* _rezervacije;
+	int _brojRezervacija;
+	static int _stopaPDV;
+public:
+	Hotel(const char* naziv) : _smjestaji(nullptr), _brojSmjestaja(0),
+		_rezervacije(nullptr), _brojRezervacija(0)
+	{
+		_naziv = AlocirajNizKaraktera(naziv);
+	}
+	~Hotel() {
+		delete[] _naziv; _naziv = nullptr;
+		delete[] _smjestaji; _smjestaji = nullptr;
+		delete[] _rezervacije; _rezervacije = nullptr;
+	}
+	bool ImaLiSoba(const Smjestaj& smjestaj) {
+		for (int i = 0; i < _brojSmjestaja; i++)
+			if (_smjestaji[i].GetBrojSobe() == smjestaj.GetBrojSobe())
+				return true;
+		return false;
+	}
+	void DodajSmjestaj(const Smjestaj& smjestaj) {
+		if (ImaLiSoba(smjestaj)) {
+			cout << endl << "Broj sobe je vec zauzet." << endl;
+			return;
+		}
+		Smjestaj* temp = new Smjestaj[_brojSmjestaja + 1];
+		for (int i = 0; i < _brojSmjestaja; i++) {
+			temp[i].Kopiraj(_smjestaji[i]);
+		}
+		temp[_brojSmjestaja].Kopiraj(smjestaj);
+		delete[] _smjestaji;
+		_smjestaji = temp;
+		_brojSmjestaja++;
+		cout << endl << "Smjestaj uspjesno dodan." << endl;
+	}
+
+	bool ProvjeriDostupnostSmjestaja(const Smjestaj& s, const Datum& pocetak, const Datum& kraj)
+	{
+		for (int j = 0; j < _brojRezervacija; j++)
+			if (_rezervacije[j].GetSmjestaj().GetBrojSobe() == s.GetBrojSobe()) {
+				if (_rezervacije[j].GetPocetakBoravka().Provjera(pocetak, kraj) && _rezervacije[j].GetKrajBoravka().Provjera(pocetak, kraj)) {
+					if (_rezervacije[j].GetStatus() != Otkazana)
+						return false;
+					else
+						return true;
+				}
+				return false;
+			}
+	}
+	void IspisiSlobodneSmjestaje(Datum pocetak, Datum kraj) {
+		for (int i = 0; i < _brojSmjestaja; i++) {
+			if (ProvjeriDostupnostSmjestaja(_smjestaji[i], pocetak, kraj)) {
+				_smjestaji[i].Info();
+				cout << endl << endl;
+			}
+
+		}
+	}
+	bool ProvjeraZaRezervaciju(const Rezervacija& rezervacija) {
+		if (!ProvjeriDostupnostSmjestaja(rezervacija.GetSmjestaj(), rezervacija.GetPocetakBoravka(), rezervacija.GetKrajBoravka())) {
+			cout << endl << "Smjestaj je zauzet u tom periodu." << endl;
+			return false;
+		}
+		if (rezervacija.GetBrojOsoba()>rezervacija.GetSmjestaj().GetMaxBrojOsoba()){
+			cout << endl << "Kapacitet ovog smjestaja je manji nego sto vama treba." << endl;
+			return false;
+		}
+		return true;
+	}
+	bool DodajRezervaciju(const Rezervacija &rezervacija) {
+		if (!ProvjeraZaRezervaciju(rezervacija))
+			return false;
+		Rezervacija* temp = new Rezervacija[_brojRezervacija + 1];
+		for (int i = 0; i < _brojRezervacija; i++){
+			temp[i].Kopiraj(_rezervacije[i]);
+		}
+		temp[_brojRezervacija].Kopiraj(rezervacija);
+		delete[] _rezervacije;
+		_rezervacije = temp;
+		_brojRezervacija++;
+		return true;
+	}
+	int DaLiPostoji(const Rezervacija &rezervacija) {
+		for (int i = 0; i < _brojRezervacija; i++) {
+			if (_rezervacije[i].GetSmjestaj().GetBrojSobe() == rezervacija.GetSmjestaj().GetBrojSobe()
+				&& _rezervacije[i].GetPocetakBoravka().JeLiJednako(rezervacija.GetPocetakBoravka())
+				&& _rezervacije[i].GetKrajBoravka().JeLiJednako(rezervacija.GetKrajBoravka()))
+				return i;
+		}
+		return -1;
+	}
+	void PotvrdiRezervaciju(const Rezervacija &rezervacija) {
+		int indeks = DaLiPostoji(rezervacija);
+		if (indeks==-1) {
+			cout << endl << "Ta rezervacija ne postoji." << endl;
+			return;
+		}
+		_rezervacije[indeks].SetStatus(Potvrdjena);
+
+	}
+	void CheckIn(const Rezervacija& rezervacija) {
+		int indeks = DaLiPostoji(rezervacija);
+		if (indeks == -1) {
+			cout << endl << "Rezervacija ne postoji." << endl;
+			return;
+		}
+		if (_rezervacije[indeks].GetStatus() != Potvrdjena) {
+			cout << endl << "Da bi se cekirali, morate prethodno potvrditi rezervaciju." << endl;
+			return;
+		}
+		_rezervacije[indeks].SetStatus(BoravakUToku);
+	}
+	int BrojDana(const Datum& pocetak, const Datum& kraj) {
+		int poc = pocetak.GetGodina()* 10000 + pocetak.GetMjesec() * 100 + pocetak.GetDan();
+		int kr = kraj.GetGodina() * 10000 + kraj.GetMjesec() * 100 + kraj.GetDan();
+		return kr-poc;
+	}
+	void CheckOut(const Rezervacija &rezervacija, bool pdv) {
+		int indeks = DaLiPostoji(rezervacija);
+		if (indeks == -1) {
+			cout << endl << "Rezervacija ne postoji." << endl;
+			return;
+		}
+		int brDana = BrojDana(_rezervacije[indeks].GetPocetakBoravka(), _rezervacije[indeks].GetKrajBoravka());
+		int ukupno1 = _rezervacije[indeks].GetUkupanIznos()*brDana;
+		cout << crt << "\t\t\tR A C U N";
+		cout << crt << "SMJESTAJ" << crt;
+		cout << "Broj osoba u smjestaju: " << _rezervacije[indeks].GetBrojOsoba() << endl;
+		cout << "Cijena po osobi: " << _rezervacije[indeks].GetSmjestaj().GetCijenaPoOsobi() << endl;
+		cout << "Broj dana: " <<brDana;
+		cout << crt << "UKUPNA CIJENA SAMO SMJESTAJA: " << ukupno1<<crt;
+		cout << "Naziv usluge\t\t\tCijena " << endl;
+		int ukupno2 = 0;
+		for (int i = 0; i < _rezervacije[indeks].GetBrojUsluga(); i++){
+			ukupno2 += _rezervacije[indeks].GetUsluge()[i].GetCijena();
+			_rezervacije[indeks].GetUsluge()[i].Info();
+		}
+		cout << crt << "UKUPNA CIJENA DODATNE USLUGE: " << ukupno2 << crt;
+		cout << "UKUPNA CIJENA (bez PDV-a): " << ukupno1 + ukupno2 << crt;
+		if(pdv)
+			cout << "UKUPNA CIJENA (sa PDV-om): " << (ukupno1 + ukupno2) +((ukupno1 + ukupno2) *(_stopaPDV/100.0))<< crt;
+
+	}
+	int BrojacSmjestaja(const Smjestaj& smjestaj, Datum pocetak, Datum kraj) {
+		int brojac = 0;
+		for (int i = 0; i < _brojRezervacija; i++){
+			if (_rezervacije[i].GetSmjestaj().GetBrojSobe() == smjestaj.GetBrojSobe()
+				&& _rezervacije[i].GetPocetakBoravka().Provjera(pocetak,kraj)
+				&& _rezervacije[i].GetKrajBoravka().Provjera(pocetak, kraj))
+				brojac++;
+		}
+		return brojac;
+	}
+	Smjestaj GetNajTrazenijiSmjestaj(Datum pocetak, Datum kraj) {
+		int indeksMax = 0;
+		int velicinaMax = 0;
+		for (int i = 0; i < _brojRezervacija; i++){
+			if (BrojacSmjestaja(_rezervacije[i].GetSmjestaj(), pocetak, kraj) > velicinaMax) {
+				velicinaMax = BrojacSmjestaja(_rezervacije[i].GetSmjestaj(), pocetak, kraj);
+				indeksMax = i;
+			}
+		}
+		return _rezervacije[indeksMax].GetSmjestaj();
+
+	}
+	int SaberiUsluge(int indeks) {
+		int ukupno = 0;
+		for (int i = 0; i < _rezervacije[indeks].GetBrojUsluga(); i++)
+			ukupno += _rezervacije[indeks].GetUsluge()[i].GetCijena();
+		return ukupno;
+	}
+	
+};
+int Hotel::_stopaPDV = 17;
+
+
+int main() {
+
+#pragma region Hotel
+
+	const int brojUsluga(5);
+	Hotel hotel1("Hotel Mostar");
+
+	Usluga* usluge[brojUsluga];
+	usluge[0] = new Usluga("Parking", 5, TipNaplate(1));
+	usluge[1] = new Usluga("Dorucak", 10, TipNaplate(0));
+	usluge[2] = new Usluga("Rucak", 15, TipNaplate(0));
+	usluge[3] = new Usluga("Wellness & SPA", 40, TipNaplate(2));
+	usluge[4] = new Usluga("Veseraj", 10, TipNaplate(2));
+
+	Smjestaj apartman(1, TipSmjestaja(0), 5, 30);
+	Smjestaj soba1(2, TipSmjestaja(1), 2, 20);
+	Smjestaj soba2(3, TipSmjestaja(2), 4, 20);
+	Smjestaj soba3(1, TipSmjestaja(0), 2, 15);
+
+	//Funkciju za dodavanje smjestajnih kapaciteta hotela. Hotel ne moze imati vi�e smje�taja
+	//pod istim brojem.
+	hotel1.DodajSmjestaj(apartman);
+	hotel1.DodajSmjestaj(soba1);
+	hotel1.DodajSmjestaj(soba2);
+	hotel1.DodajSmjestaj(soba3); //Nece se dodati radi zauzetosti broja smje�taja
+
+	//Funkcija koja vr�i ispis podataka o svim slobodnim smje�tajima hotela u zadatom periodu.
+	hotel1.IspisiSlobodneSmjestaje(Datum(24, 10, 2018), Datum(1, 11, 2018));
+
+	//Ispis dodatnih usluga
+	for (size_t i = 0; i < brojUsluga; i++)
+	{
+		usluge[i]->Info();
+	}
+
+#pragma endregion
+
+#pragma region RezervacijaGost1
+
+	Gost gost1("Marija Peric", "033/222-555");
+	Rezervacija rezervacija1(Datum(28, 10, 2018), Datum(2, 11, 2018), gost1, apartman, 3);
+	rezervacija1.RezervisiUslugu(*usluge[0]); //Parking
+	rezervacija1.RezervisiUslugu(*usluge[1]); //Dorucak za 3 osobe
+
+
+	//Funkcija kojom se dodaje nova rezervacija pod uslovom da smjestaj nije zauzet u trazenom periodu 
+	//i da kapacitet smje�taja nije manji od broja osoba. Funkcija treba da ispi�e sve uslove koje rezervacija
+	//ne ispunjava.
+	if (hotel1.DodajRezervaciju(rezervacija1))
+		cout << "Uspjesno ste rezervisali smjestaj." << endl;
+	else
+		cout << "Rezervacija smjestaja nije uspjela." << endl;
+
+	hotel1.PotvrdiRezervaciju(rezervacija1); //Prije nego se gosti prijave u hotel rezervacija mora biti potvrdena.
+	hotel1.CheckIn(rezervacija1); //Mijenja status rezervacije na BoravakUToku, pod uslovom da je ista prethodno potvrdena.
+
+
+	/*Vr�i ispis racuna sa svim stavkama rezervacije (posebno stavka za smje�taj, a posebno za sve usluge sa
+		pripadajucim cijenama, te ukupnim iznosom racuna na kraju). Parametar tipa bool govori da li je potrebno obracunati
+		PDV po utvrdenoj stopi na ukupan iznos racuna te na sve stavke pojedinacno.*/
+	hotel1.CheckOut(rezervacija1, true);
+
+#pragma endregion
+
+#pragma region RezervacijaGost2
+	Gost gost2("Adijan Maric", "066/111-333");
+	Rezervacija rezervacija2(Datum(29, 10, 2018), Datum(5, 11, 2018), gost2, apartman, 6);
+
+	if (hotel1.DodajRezervaciju(rezervacija2))
+		cout << "Uspjesno ste rezervisali smjestaj." << endl;
+	else
+		cout << "Rezervacija smjestaja nije uspjela." << endl;
+
+#pragma endregion
+
+	//Napomena: Za potrebe testiranje funkcija u nastavku dopuniti testni program.
+
+	//Pronalazi i vraca podatke o najtra�enijem smje�taju hotela (onaj koji je najvi�e puta rezervisan u datom periodu)
+	hotel1.GetNajTrazenijiSmjestaj(Datum(1, 1, 2018), Datum(24, 1, 2018)).Info();
+
+	//Pronalazi i ispisuje podate o VIP gostu (onaj koji je u sumi utro�io najvi�e novca u hotelu u trenutnoj godini - 2018).
+	//hotel1.PronadjiVIPGosta().Info();
+
+	for (size_t i = 0; i < brojUsluga; i++)
+	{
+		delete usluge[i];
+	}
+
+	system("pause>0");
+
+	return 0;
+}
+
