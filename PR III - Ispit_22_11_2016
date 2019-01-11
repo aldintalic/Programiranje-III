@@ -1,0 +1,172 @@
+#include<iostream>
+using namespace std;
+
+/*
+	Odgovore na pitanja predajte zajedno sa programskim code-om, unutar komentara!
+	�ta se podrazumijeva pod pojmom invarijante klase?
+	ODGOVOR:
+	�ta se podrazumijeva pod pojmom apstraktna klasa?
+	ODGOVOR:
+*/
+
+const char * crt = "\n-----------------------------------\n";
+class KupljeniArtikal {
+	char * _naziv;
+	float _cijena;
+	int _kolicina;
+	//konstruktor, destruktor i potrebne funkcije
+public:
+	KupljeniArtikal(const char* naziv,float cijena):_kolicina(1){
+		int vel = strlen(naziv) + 1;
+		_naziv = new char[vel];
+		strcpy_s(_naziv, vel, naziv);
+		_cijena = cijena;
+	}
+	KupljeniArtikal():_naziv(nullptr),_cijena(0),_kolicina(0) {}
+	KupljeniArtikal(const KupljeniArtikal& original){
+		delete[] _naziv;
+		int vel = strlen(original._naziv) + 1;
+		_naziv = new char[vel];
+		strcpy_s(_naziv, vel, original._naziv);
+		_cijena = original._cijena;
+		_kolicina = original._kolicina;
+	}
+	~KupljeniArtikal() { delete[] _naziv; _naziv = nullptr; }
+	KupljeniArtikal& operator+=(float cijena) {
+
+		if (cijena > 0) 
+			_cijena += cijena;
+		return *this;
+	}
+	KupljeniArtikal& operator++() {
+		++_kolicina;
+		return *this;
+	}
+	KupljeniArtikal& operator++(int) {
+		KupljeniArtikal temp(*this);
+		_kolicina++;
+		return temp;
+	}
+	const char* GetNaziv()const { return _naziv; }
+	KupljeniArtikal& operator=(const KupljeniArtikal& original) {
+		delete[] _naziv;
+		int vel = strlen(original._naziv) + 1;
+		_naziv = new char[vel];
+		strcpy_s(_naziv, vel, original._naziv);
+		_cijena = original._cijena;
+		_kolicina = original._kolicina;
+		return *this;
+	}
+	friend ostream& operator<<(ostream& ispis, const KupljeniArtikal& artikal);
+	friend bool operator>(const KupljeniArtikal& artikal, float ukupnaCijena);
+};
+ostream& operator<<(ostream& ispis, const KupljeniArtikal& artikal) {
+	ispis << artikal._naziv << "\t\t" << artikal._cijena << "\t\t" << artikal._kolicina << crt;
+	return ispis;
+}
+bool operator>(const KupljeniArtikal& artikal, float ukupnaCijena) {
+	float cijenaArtikla = artikal._cijena*artikal._kolicina;
+	if (cijenaArtikla > ukupnaCijena)
+		return true;
+	return false;
+}
+class Racun {
+	static int _brojacRacuna;
+	const int _brojRacuna; //brojevi racuna krecu od 1
+	KupljeniArtikal * _artikli; //niz povecavamo prilikom svakog dodavanja artikla
+	int _trenutno;
+	int Provjera(const KupljeniArtikal& artikal) {
+		for (int i = 0; i < _trenutno; i++) {
+			if (strcmp(_artikli[i].GetNaziv(), artikal.GetNaziv()) == 0)
+				return i;
+		}
+		return -1;
+	}
+public:
+	Racun():_artikli(nullptr),_trenutno(0),_brojRacuna(_brojacRacuna++){}
+	~Racun() {delete[] _artikli; _artikli = nullptr;}
+	Racun& operator+=(const KupljeniArtikal& artikal) {
+		int indeks = Provjera(artikal);
+		if (indeks != -1) 
+			_artikli[indeks]++;
+		else {
+			KupljeniArtikal* temp = new KupljeniArtikal[_trenutno + 1];
+			for (int i = 0; i < _trenutno; i++)
+				temp[i] = _artikli[i];
+			temp[_trenutno] = artikal;
+			delete[] _artikli;
+			_artikli = temp;
+			_trenutno++;
+		}
+		return *this;
+	}
+	friend ostream& operator<<(ostream& ispis, const Racun& racun);
+	int Brojac(float ukupnaCijena) {
+		int brojac = 0;
+		for (int i = 0; i < _trenutno; i++) {
+			if (_artikli[i] > ukupnaCijena) {
+				brojac++;
+			}
+		}
+			return brojac;
+	}
+	KupljeniArtikal* operator()(float ukupnaCijena, int &brojPronadjenih) {
+		brojPronadjenih = Brojac(ukupnaCijena);
+		KupljeniArtikal* noviArtikli = new KupljeniArtikal[brojPronadjenih];
+		for (int i = 0; i < _trenutno; i++){
+			if (_artikli[i] > ukupnaCijena) {
+				noviArtikli[i] = _artikli[i];
+			}
+		}
+		if (brojPronadjenih != 0)
+			return noviArtikli;
+		return nullptr;
+	}
+
+};
+int Racun::_brojacRacuna = 1;
+
+ostream& operator<<(ostream& ispis, const Racun& racun) {
+	ispis << crt << "Broj racuna: " << racun._brojRacuna << crt;
+	ispis <<  "NAZIV ARTIKLA\tCIJENA\tKOLICINA" << crt;
+
+	for (int i = 0; i < racun._trenutno; i++)
+		ispis << racun._artikli[i];
+	return ispis;
+}
+
+
+void main() {
+	KupljeniArtikal cokolada("Milka", 2.29);//naziv i cijena artikla
+	KupljeniArtikal sok("Jucy", 1.38);
+	KupljeniArtikal cigarete("Drina", 4.32);
+	KupljeniArtikal mlijeko("Meggle", 2.87);
+
+	cokolada += 0.27;//povecavamo cijenu  artikla, sada je cijena 2,56BAM
+	++cokolada;//povecavamo kolicinu artikla, sada je kolicina 2	
+	++sok;
+
+	Racun racun;
+	racun += cokolada;//dodajemo 2 cokolade po cijeni od 2,56BAM
+	racun += sok;
+	racun += sok;//ako vise puta pokusamo dodati isti artikal, treba da se uveca samo njegova kolicina na racunu 
+				//tj. artikli se ne smiju duplirati
+	racun += cigarete;
+	racun += mlijeko;
+	cout << racun << endl; // ispis racuna mozete vidjeti na slici.
+
+	int brojPronadjenih = 0;
+	float ukupnaCijena = 5.10;
+	cout << crt << "Artikli skuplji od >> " << ukupnaCijena << crt;
+	//treba da vrati sve artikle cija je ukupna cijena na racunu (cijena * kolicina) veca od poslane tj. 5.10BAM
+	KupljeniArtikal * artikli = racun(ukupnaCijena, brojPronadjenih);
+	if (artikli != nullptr) {
+		for (size_t i = 0; i < brojPronadjenih; i++) {
+			cout << artikli[i] << endl;
+		}
+	}
+	delete[] artikli;
+	artikli = nullptr;
+
+	system("pause>0");
+}
