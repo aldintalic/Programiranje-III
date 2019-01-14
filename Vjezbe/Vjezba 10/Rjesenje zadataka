@@ -1,0 +1,869 @@
+#include<iostream>
+#include<string>
+#include<Windows.h>
+#include<vector>
+#include<conio.h>
+#include<string>
+#include<algorithm>
+using namespace std;
+
+const char* crt = { "\n------------------------------------\n" };
+enum TipPitanja { esejsko, MCMA, MCSA, pojam };
+
+template<class T1, class T2>
+class List {
+	T1* _elementi1;
+	T2* _elementi2;
+	const int _max;
+	int _trenutno;
+public:
+	List(int max=20) : _max(max){
+		_elementi1 = nullptr;
+		_elementi2 = nullptr;
+		_trenutno = 0;
+	}
+
+	List(const List& list) : _max(list._max){
+		_elementi1 = new T1[list._trenutno];
+		_elementi2 = new T2[list._trenutno];
+
+		for (int i = 0; i < list._trenutno; i++){
+			_elementi1[i] = list._elementi1[i];
+			_elementi2[i] = list._elementi2[i];
+		}
+
+		_trenutno = list._trenutno;
+	}
+
+	~List(){
+		delete[] _elementi1;
+		_elementi1 = nullptr;
+
+		delete[] _elementi2;
+		_elementi2 = nullptr;
+	}
+	
+	bool Add(const T1& el1, const T2& el2)
+	{
+		if (_trenutno == _max)
+			return false;
+
+		for (int i = 0; i < _trenutno; i++)
+		{
+			if (_elementi1[i] == el1 && _elementi2[i] == el2)
+				return false;
+		}
+
+		T1* temp1 = new T1[_trenutno + 1];
+		T2* temp2 = new T2[_trenutno + 1];
+
+
+		for (int i = 0; i < _trenutno; i++)
+		{
+			temp1[i] = _elementi1[i];
+			temp2[i] = _elementi2[i];
+		}
+
+		delete[] _elementi1;
+		delete[] _elementi2;
+
+		_elementi1 = temp1;
+		_elementi2 = temp2;
+
+		_elementi1[_trenutno] = el1;
+		_elementi2[_trenutno] = el2;
+		_trenutno++;
+	}
+
+	bool Remove(int index)
+	{
+		if (index < 0 || index >= _trenutno)
+			throw exception("Greska. Pozicija nije validna.");
+
+		T1* temp1 = new T1[_trenutno - 1];
+		T2* temp2 = new T2[_trenutno - 1];
+
+		int j = 0;
+		for (int i = 0; i < _trenutno; i++)
+		{
+			if (i != index)
+			{
+				temp1[j] = _elementi1[i];
+				temp2[j] = _elementi2[i];
+				j++;
+			}
+		}
+
+		delete[] _elementi1;
+		delete[] _elementi2;
+
+		_elementi1 = temp1;
+		_elementi2 = temp2;
+
+		_trenutno--;
+
+		return true;
+	}
+
+	T1& GetElement1(int index)
+	{
+		if (index >= 0 && index < _trenutno)
+			return _elementi1[index];
+	}
+
+	T2& GetElement2(int index){
+		if (index >= 0 && index < _trenutno)
+			return _elementi2[index];
+
+	}
+
+	int GetTrenutno()const { return _trenutno; }
+
+	friend ostream& operator<<<>(ostream&, const List&);
+
+	List& operator=(const List& original) {
+		if (this != &original) {
+			delete[] _elementi1;
+			delete[] _elementi2;
+			_trenutno = original._trenutno;
+			_elementi1 = new T1[original._trenutno];
+			_elementi2 = new T2[original._trenutno];
+
+			for (int i = 0; i < original._trenutno; i++) {
+				_elementi1[i] = original._elementi1[i];
+				_elementi2[i] = original._elementi2[i];
+			}
+		}
+		return *this;
+	}
+};
+
+template<class T1, class T2>
+ostream& operator<<<>(ostream& cout, const List<T1, T2>& list)
+{
+	for (int i = 0; i < list._trenutno; i++)
+	{
+		cout << list._elementi1[i] << "\t" << list._elementi2[i] << endl;
+	}
+
+	return cout;
+}
+
+char * AlocirajNizKaraktera(const char * sadrzaj) {
+	if (sadrzaj == nullptr)
+		return nullptr;
+	int vel = strlen(sadrzaj) + 1;
+	char * temp = new char[vel];
+	strcpy_s(temp, vel, sadrzaj);
+	return temp;
+}
+
+class Pitanje{
+protected:
+	int _id;
+	char* _oblast;
+	char* _tekst;
+	double _bodovi;
+public:
+	Pitanje(int id, const char* tekst, const char* oblast, double bodovi) :
+		_id(id), _bodovi(bodovi)
+	{
+		_tekst = AlocirajNizKaraktera(tekst);
+		_oblast = AlocirajNizKaraktera(oblast);
+	}
+
+	Pitanje():_id(-1),_oblast(nullptr),_tekst(nullptr),_bodovi(0){}
+
+	Pitanje(const Pitanje& original){
+		_id=original._id;
+		_bodovi = original._bodovi;
+		_tekst = AlocirajNizKaraktera(original._tekst);
+		_oblast = AlocirajNizKaraktera(original._oblast);
+	}
+
+	Pitanje& operator=(const Pitanje& original) {
+		if (this != &original) {
+			delete[] _oblast;
+			delete[] _tekst;
+			_id = original._id;
+			_bodovi = original._bodovi;
+			_oblast = AlocirajNizKaraktera(original._oblast);
+			_tekst = AlocirajNizKaraktera(original._tekst);
+		}
+		return *this;
+	}
+
+	virtual ~Pitanje() = 0{
+		delete[] _tekst;
+		_tekst = nullptr;
+
+		delete[] _oblast;
+		_oblast = nullptr;
+	}
+
+	virtual void Info()
+	{
+		cout << "Pitanje: " << _tekst << endl;
+	}
+
+	void Set(int id,const char* oblast,const char* tekst,double bodovi){
+		delete[] _oblast;
+		delete[] _tekst;
+		_id = id;
+		_bodovi = bodovi;
+		_oblast = AlocirajNizKaraktera(oblast);
+		_tekst = AlocirajNizKaraktera(tekst);
+	}
+
+	/*virtual void Info() {
+		cout << "ID: " << _id << endl;
+		cout << "Oblast: " << _oblast << endl;
+		cout << "Tekst pitanja: " << _tekst<< endl;
+		cout << "Bodovi: " << _bodovi << endl;
+	}*/
+	
+	int GetId() { return _id; }
+
+	char* GetOblast() { return _oblast; }
+
+	char* GetTekst() { return _tekst; }
+	
+	double GetBodove() { return _bodovi; }
+};
+
+//Pitanje na kojem studenti upisuju odgovore.
+//Pohranjuje se tačan odgovor od strane edukatora.
+class EsejskoPitanje : virtual public Pitanje {
+protected:
+	char* _tacanOdgovor;
+	char* _odgovorStudenta;
+
+public:
+	//Konstruktor i destruktor
+	EsejskoPitanje(int id, const char* tekst, const char* oblast, double bodovi,const char* tacanOdgovor)
+	:Pitanje(id,tekst,oblast,bodovi){
+		_tacanOdgovor = AlocirajNizKaraktera(tacanOdgovor);
+		_odgovorStudenta = nullptr;
+	}
+
+	EsejskoPitanje():_tacanOdgovor(nullptr),_odgovorStudenta(nullptr){}
+
+	EsejskoPitanje(const char* odgovor){
+		_tacanOdgovor = AlocirajNizKaraktera(odgovor);
+		_odgovorStudenta = nullptr;
+	}
+
+	EsejskoPitanje(const EsejskoPitanje& original):Pitanje(original){
+		_tacanOdgovor = AlocirajNizKaraktera(original._tacanOdgovor);
+		_odgovorStudenta = AlocirajNizKaraktera(original._odgovorStudenta);
+	}
+
+	EsejskoPitanje& operator=(const EsejskoPitanje& original) {
+		if (this != &original) {
+			delete[] _tacanOdgovor;
+			delete[] _odgovorStudenta;
+			Pitanje::operator=(original);
+			_tacanOdgovor = AlocirajNizKaraktera(original._tacanOdgovor);
+			_odgovorStudenta = AlocirajNizKaraktera(original._odgovorStudenta);
+		}
+		return *this;
+
+	}
+
+	virtual ~EsejskoPitanje(){
+		delete[] _odgovorStudenta; _odgovorStudenta = nullptr;
+		delete[] _tacanOdgovor; _tacanOdgovor = nullptr;
+	}
+	
+	//Funkciju za izmjenu svih atributa klase
+	void SetAll(int id, const char* oblast, const char* tekst, double bodovi,const char* tacanOdgovor, const char* odgovorStudenta) {
+		delete[]_tacanOdgovor; delete[]_odgovorStudenta;
+		Pitanje::Set(id, oblast, tekst, bodovi);
+		_tacanOdgovor = AlocirajNizKaraktera(tacanOdgovor);
+		_odgovorStudenta = AlocirajNizKaraktera(odgovorStudenta);
+
+	}
+
+	virtual void Info() {
+		Pitanje::Info();
+		cout << "Tacan odgovor: " << _tacanOdgovor << endl;
+	}
+	
+	virtual void OdgovorStudenta() {
+		cout << "Vas odgovor -> ";
+		string temp;
+		getline(cin, temp);
+		int vel = temp.size()+1;
+		_odgovorStudenta = new char[vel];
+		strcpy_s(_odgovorStudenta, vel, temp.c_str());
+		cout << crt;
+	}
+
+	void ToLower() {
+		int vel = strlen(_odgovorStudenta)+1;
+		for (int i = 0; i < vel; i++)
+			_odgovorStudenta[i] = tolower(_odgovorStudenta[i]);
+		int vel2 = strlen(_tacanOdgovor)+1;
+		for (int i = 0; i < vel2; i++)
+			_tacanOdgovor[i] = tolower(_tacanOdgovor[i]);
+	}
+
+	virtual double OcijeniOdgovor() {
+		ToLower();
+		if (strcmp(_tacanOdgovor, _odgovorStudenta) == 0)
+			return _bodovi;
+		
+		return 0;
+	}
+
+};
+
+//Pitanje koje može imati više tačnih odgovora. Student bira ponuđene opcije. 
+class MCMAPitanje : virtual public Pitanje{
+protected:
+	List<char*, bool> _odgovori; //ponuđeni odgovori sa oznakama tačnih odgovora
+	int* _oznaceniOdgovoriStudenta; //čuvaju se redni brojevi (npr. 1 - 3 - 5) ponuđenih odgovora koje je odabrao student
+	bool _validno;
+	int _trenutno;
+public:
+	//Konstruktor i destruktor
+	//Broj bodova inicijalno postaviti na 0 i uvećavati svakim označenim tačnim odgovorom.
+	MCMAPitanje(int id, const char* tekst, const char* oblast, double bodovi,int max):Pitanje(id,tekst,oblast,bodovi),_odgovori(max){
+		_oznaceniOdgovoriStudenta = nullptr;
+		_validno = false;
+		_trenutno = 0;
+	}
+
+	MCMAPitanje(int max):_odgovori(max){
+		_oznaceniOdgovoriStudenta = nullptr;
+		_validno = false;
+		_trenutno = 0;
+	}
+
+	MCMAPitanje(MCMAPitanje& original):Pitanje(original){
+		_oznaceniOdgovoriStudenta = new int[original._trenutno];
+		for (int i = 0; i < original._odgovori.GetTrenutno(); i++) 
+			_odgovori.Add(AlocirajNizKaraktera(original._odgovori.GetElement1(i)), original._odgovori.GetElement2(i));
+		_trenutno = original._trenutno;
+		for (int i = 0; i < _trenutno; i++)
+			_oznaceniOdgovoriStudenta[i] = original._oznaceniOdgovoriStudenta[i];
+		_validno = original._validno;
+	}
+
+	virtual ~MCMAPitanje(){
+		delete[] _oznaceniOdgovoriStudenta; _oznaceniOdgovoriStudenta = nullptr;
+		for (int i = 0; i < _odgovori.GetTrenutno(); i++){
+			delete[] _odgovori.GetElement1(i);
+			_odgovori.GetElement1(i) = nullptr;
+		}
+	}
+
+	bool IsValidno() { return _bodovi >= 2; }
+
+	MCMAPitanje& operator=(MCMAPitanje& original) {
+		if (this != &original) {
+			Pitanje::operator=(original);
+			for (int i = 0; i < _odgovori.GetTrenutno(); i++)
+				delete[] _odgovori.GetElement1(i);
+			delete[] _oznaceniOdgovoriStudenta;
+			_oznaceniOdgovoriStudenta = new int[original._trenutno];
+			for (int i = 0; i < original._odgovori.GetTrenutno(); i++)
+				_odgovori.Add(AlocirajNizKaraktera(original._odgovori.GetElement1(i)), original._odgovori.GetElement2(i));
+			_trenutno = original._trenutno;
+			for (int i = 0; i < _trenutno; i++)
+				_oznaceniOdgovoriStudenta[i] = original._oznaceniOdgovoriStudenta[i];
+			_validno = original._validno;
+		}
+		return *this;
+
+	}
+
+	//Funkciju za dodavanje odgovora u listu koja treba da osigura da su najmanje 2 (od max) odgovora označena kao tačna.
+	// Dok se ne dodaju svi predviđeni odgovori pitanje ne treba biti upotrebljivo ukoliko prethodni uslov nije ispunjen (ne prikazivati
+	//pitanja na ispisu).
+	//Napomena: Podatke o odgovorima čuvati u zasebnoj memoriji i istu dealocirati unutar same klase.
+
+	virtual void AddOdgovor(const char* odgovor, bool tacan) {
+		if (!_odgovori.Add(AlocirajNizKaraktera(odgovor), tacan))
+			return;
+		if (tacan)
+			_bodovi++;
+			
+		if (IsValidno())
+			_validno = true;
+	}
+
+	//Funkciju za uklanjanje odgovora na osnovu rednog broja u listi. Ukoliko se uklanja odgovor koji je označen kao tačan i 
+	//pri tome u listi ostaje samo još jedan odgovor označen kao tačan, pitanje postaje neupotrebljivo dok se ne doda još jedan
+	//tačan odgovor.
+
+	virtual void RemoveOdgovor(int lokacija) {
+		if (_odgovori.GetElement2(lokacija))
+			_bodovi--;
+		delete[] _odgovori.GetElement1(lokacija);
+		_odgovori.GetElement1(lokacija)=nullptr;
+		if (_bodovi < 2)
+			_validno = false;
+	}
+
+	//Funkciju za promjenu odgovora na određenom rednom broju.
+	void ChangeOdgovor(int lokacija,const char* odgovor) {
+		if (lokacija < 0 || lokacija >= _odgovori.GetTrenutno())
+			return;
+		delete[] _odgovori.GetElement1(lokacija);
+		_odgovori.GetElement1(lokacija) = AlocirajNizKaraktera(odgovor);
+	}
+
+	virtual void Info() {
+		if (_validno) {
+			Pitanje::Info();
+			cout << _odgovori << endl;
+		}
+	}
+
+	virtual void PrikaziOdgovore() {
+		cout << crt;
+		for (int i = 0; i < _odgovori.GetTrenutno(); i++)
+			cout << i + 1 << ". " << _odgovori.GetElement1(i) << endl;
+	}
+
+	virtual void OdgovorStudenta(){
+		cout << crt<<"Upisite tacne odgovore -> " << crt;
+		vector<int> odgovori;
+		int odg;
+		char kraj = 'y';
+		while (kraj!='n'){
+			cout << " -> ";
+			cin >> odg;
+			odgovori.push_back(odg-1);
+			cout <<crt<< "Zelite li unijeti jos odgovora? (y - n)" << crt;
+			cin >> kraj;
+			kraj = tolower(kraj);
+			if (odgovori.size() == _odgovori.GetTrenutno()) {
+				cout << crt << "Ne mozete unijeti vise odgovora " << crt;
+				break;
+			}
+		}
+		_oznaceniOdgovoriStudenta = new int[odgovori.size()];
+		for (int i = 0; i < odgovori.size(); i++)
+			_oznaceniOdgovoriStudenta[i] = odgovori[i];
+		_trenutno = odgovori.size();
+
+	}
+
+	virtual double OcijeniOdgovor() {
+		int tacni = 0, netacni = 0;
+		for (int i = 0; i < _trenutno; i++) {
+			if (_odgovori.GetElement2(_oznaceniOdgovoriStudenta[i]))
+				tacni++;
+			else
+				netacni++;
+		}
+		if (netacni != 0)
+			return 0;
+		return tacni;
+	}
+};
+
+//Pitanje koje može imati jedan tačan odgovor. Student bira jednu od ponuđenih opcija.
+class MCSAPitanje : virtual public MCMAPitanje
+{
+public:
+	//Konstruktor
+	//Broj bodova se postavlja na vrijednost proslijeđenog parametra.
+	MCSAPitanje(int id, const char* tekst, const char* oblast, double bodovi, int max)
+	:Pitanje(id,tekst,oblast,bodovi),MCMAPitanje(max){}
+	
+	MCSAPitanje(int max=30):MCMAPitanje(max){}
+
+	MCSAPitanje(MCSAPitanje& original):MCMAPitanje(original),Pitanje(original){}
+
+	virtual ~MCSAPitanje(){
+		delete[] _oznaceniOdgovoriStudenta; _oznaceniOdgovoriStudenta = nullptr;
+		for (int i = 0; i < _odgovori.GetTrenutno(); i++) {
+			delete[] _odgovori.GetElement1(i);
+			_odgovori.GetElement1(i) = nullptr;
+		}
+	}
+
+	MCSAPitanje& operator=(MCSAPitanje& original) {
+		if (this != &original) {
+			Pitanje::operator=(original);
+			MCMAPitanje::operator=(original);
+		}
+		return *this;
+	}
+
+	//Preklopljene verzije funkcija za dodavanje i uklanjanje odgovora koje dozvoljavaju da samo jedan odgovor bude označen kao tačan.
+	//Svi prethodno navedeni uslovi trebaju biti ispunjeni, ali u ovom slučaju sa isključivo jednim tačnim odgovorom.
+	void AddOdgovor(const char* odgovor, bool tacan) {
+		if (_validno && tacan)
+			return;
+		if (!_odgovori.Add(AlocirajNizKaraktera(odgovor), tacan))
+			return;
+		if (tacan)
+			_validno = true;
+	}
+	
+	void RemoveOdgovor(int lokacija) {
+		if (_odgovori.GetElement2(lokacija))
+			_validno = false;
+		delete[] _odgovori.GetElement1(lokacija); _odgovori.GetElement1(lokacija) = nullptr;
+		_odgovori.Remove(lokacija);
+	}
+
+	virtual void Info() {
+		if (_validno)
+			MCMAPitanje::Info();
+	}
+
+	virtual void OdgovorStudenta() {
+		cout << crt<<"Vas odgovor -> " << crt;
+		int odg;
+		cin >> odg;
+		_oznaceniOdgovoriStudenta = new int(odg-1);
+		_trenutno = 1;
+	}
+
+	virtual double OcijeniOdgovor() {
+		if (_odgovori.GetElement2(_oznaceniOdgovoriStudenta[_trenutno - 1]))
+			return _bodovi;
+		return 0;
+	}
+};
+
+//Pojam je tip pitanja kod kojeg se definiše pojam zadat tekstom pitanja. Definicija/Opis pojma se tretira kao
+//esejski dio pitanja, dok se karakteristike tog pojma postavljaju kroz MCMA tip pitanja.
+class Pojam : public EsejskoPitanje, public MCMAPitanje{
+	bool _slozen; //pojam moze biti prost ili slozen
+public:
+	//Konstruktor
+	//Jednostavno pitanje tipa Pojam nosi minimalno 3 boda, a ukoliko je riječ o složenom pojmu minimalno 5 bodova.
+	Pojam(int id, const char* tekst, const char* oblast,const char* tacanOdg,int bodoviEsejsko,int max)
+	:Pitanje(id,tekst,oblast,bodoviEsejsko),MCMAPitanje(max),EsejskoPitanje(tacanOdg){
+		_slozen = false;
+	}
+	
+	Pojam(int max) :MCMAPitanje(max) { _slozen = false; }
+
+	Pojam(Pojam& original):Pitanje(original),MCMAPitanje(original),EsejskoPitanje(original){}
+
+	Pojam& operator=(Pojam& original) {
+		if (this != &original) {
+			Pitanje::operator=(original);
+			MCMAPitanje::operator=(original);
+			EsejskoPitanje::operator=(original);
+			_slozen = original._slozen;
+		}
+		return *this;
+	}
+
+	//Dodati ostale potrebne funkcije za rad sa klasom.
+	void AddOdgovor(const char* odgovor, bool tacan) {
+		MCMAPitanje::AddOdgovor(AlocirajNizKaraktera(odgovor), tacan);
+		if (_bodovi >= 5)
+			_slozen = true;
+	}
+
+	void Info() {
+		Pitanje::Info();
+		cout << "Ponudjeni odgovori: " << MCMAPitanje::_odgovori<< endl;
+		cout << "Tacan odgovor esejskog: " << EsejskoPitanje::_tacanOdgovor<< endl;
+	}
+
+	void PrikaziOdgovore() {
+		MCMAPitanje::PrikaziOdgovore();
+	}
+
+	void OdgovorStudenta() {
+		MCMAPitanje::OdgovorStudenta();
+		cin.ignore();
+		EsejskoPitanje::OdgovorStudenta();
+	}
+
+	double OcijeniOdgovor() {
+		return MCMAPitanje::OcijeniOdgovor() + EsejskoPitanje::OcijeniOdgovor();
+	}
+};
+
+class Test {
+	char _brojIndeksa[10]; //broj indeksa studenta za kojeg je formiran test
+	Pitanje* _pitanja[30]; // test studenta sadrži najviše 30 pitanja različitog tipa
+	double _maksimalnoBodova;
+	double _osvojenoBodova;
+	double _rezultat; //izražen u procentima
+	int ocjena;
+public:
+	//Omogućiti formiranje testa sa različitim tipom pitanja, te dodati funkcije za unos, provjeru tačnih odgovora i ocjenu studenta.
+	//Po potrebi dopuniti i prethodne klase novim atributima/funkcijama.
+	Test(const char* brojIndeksa):_maksimalnoBodova(0),_osvojenoBodova(0),_rezultat(0),ocjena(0){
+		strncpy_s(_brojIndeksa,brojIndeksa,_TRUNCATE);
+		for (int i = 0; i < 30; i++)
+			_pitanja[i] = nullptr;
+	}
+
+	int GetTrenutno() {
+		for (int i = 0; i < 30; i++)
+			if (_pitanja[i] == nullptr)
+				return i;
+		return -1;
+	}
+
+	int GetTipPitanja(Pitanje& pitanje) {
+		if (dynamic_cast<Pojam*>(&pitanje) != nullptr)
+			return pojam;
+		if (dynamic_cast<MCSAPitanje*>(&pitanje) != nullptr)
+			return MCSA;
+		if (dynamic_cast<MCMAPitanje*>(&pitanje) != nullptr)
+			return MCMA;
+		if (dynamic_cast<EsejskoPitanje*>(&pitanje) != nullptr)
+			return esejsko;
+	}
+
+	void DodajPitanje(Pitanje& pitanje) {
+		int tip = GetTipPitanja(pitanje);
+		int indeks = GetTrenutno();
+		if (tip==pojam) {
+			_pitanja[indeks] = new Pojam(*dynamic_cast<Pojam*>(&pitanje));
+			return;
+		}
+		if (tip==MCSA) {
+			_pitanja[indeks] = new MCSAPitanje(*dynamic_cast<MCSAPitanje*>(&pitanje));
+			return;
+		}
+		if (tip==MCMA) {
+			_pitanja[indeks] = new MCMAPitanje(*dynamic_cast<MCMAPitanje*>(&pitanje));
+			return;
+		}
+		if (tip==esejsko) {
+			_pitanja[indeks] = new EsejskoPitanje(*dynamic_cast<EsejskoPitanje*>(&pitanje));
+			return;
+		}
+	}
+
+	void SetMaxBodova() {
+		double ukupno = 0;
+		for (int i = 0; i < GetTrenutno(); i++)
+			ukupno += _pitanja[i]->GetBodove();
+		_maksimalnoBodova = ukupno;
+	}
+
+	void GetOcjenu() {
+		if (_rezultat >= 55 && _rezultat <= 64.99)
+			ocjena = 6;
+		else if (_rezultat >= 65 && _rezultat <= 74.99)
+			ocjena = 7;
+		else if (_rezultat >= 75 && _rezultat <= 84.99)
+			ocjena = 8;
+		else if (_rezultat >= 85 && _rezultat <= 94.99)
+			ocjena = 9;
+		else if (_rezultat >= 95 && _rezultat <= 100)
+			ocjena = 10;
+		else
+			ocjena = 5;
+	}
+
+	void PokreniTest() {
+		random_shuffle(&_pitanja[0], &_pitanja[GetTrenutno()]);
+		system("cls");
+		cout <<crt<< "POKRECEM TEST ZA STUDENTA: " << _brojIndeksa << crt;
+		for (int i = 0; i < GetTrenutno(); i++){
+			int tip = GetTipPitanja(*_pitanja[i]);
+
+			switch (tip){
+			case pojam:
+				cout <<crt<< dynamic_cast<Pojam*>(_pitanja[i])->GetTekst() << crt;
+				dynamic_cast<Pojam*>(_pitanja[i])->PrikaziOdgovore();
+				dynamic_cast<Pojam*>(_pitanja[i])->OdgovorStudenta();
+				_osvojenoBodova+=dynamic_cast<Pojam*>(_pitanja[i])->OcijeniOdgovor();
+				break;
+			case MCSA:
+				cout << crt << dynamic_cast<MCSAPitanje*>(_pitanja[i])->GetTekst() << crt;
+				dynamic_cast<MCSAPitanje*>(_pitanja[i])->PrikaziOdgovore();
+				dynamic_cast<MCSAPitanje*>(_pitanja[i])->OdgovorStudenta();
+				_osvojenoBodova+=dynamic_cast<MCSAPitanje*>(_pitanja[i])->OcijeniOdgovor();
+				break;
+			case MCMA:
+				cout << crt << dynamic_cast<MCMAPitanje*>(_pitanja[i])->GetTekst() << crt;
+				dynamic_cast<MCMAPitanje*>(_pitanja[i])->PrikaziOdgovore();
+				dynamic_cast<MCMAPitanje*>(_pitanja[i])->OdgovorStudenta();
+				_osvojenoBodova+=dynamic_cast<MCMAPitanje*>(_pitanja[i])->OcijeniOdgovor();
+				break;
+			case esejsko:
+				cout << crt << dynamic_cast<EsejskoPitanje*>(_pitanja[i])->GetTekst() << crt;
+				dynamic_cast<EsejskoPitanje*>(_pitanja[i])->OdgovorStudenta();
+				_osvojenoBodova+=dynamic_cast<EsejskoPitanje*>(_pitanja[i])->OcijeniOdgovor();
+				break;
+			}	
+			system("cls");
+		}
+		SetMaxBodova();
+		_rezultat = _osvojenoBodova * 1.0 / _maksimalnoBodova*100;
+		GetOcjenu();
+	}
+
+	void Info() {
+		system("cls");
+		cout << crt << "Broj indeksa -> " << _brojIndeksa << endl;
+		cout << "Rezultat -> " << _rezultat << " % " << endl;
+		cout << "Ocjena ->  " << ocjena << crt;
+	}
+};
+
+int main(){
+
+#pragma region Lista
+List<int, int> lista(100);
+
+for (int i = 0; i < 20; i++)
+	lista.Add(i, i);
+cout << lista << endl;
+
+lista.Remove(10);
+try {
+	lista.Remove(-50);
+
+}
+catch (exception& error) {
+	cout << error.what() << endl;
+}
+cout << lista << endl;
+List<int, int> kopija(lista);
+List<int, int> kopija_operator(100);
+try {
+lista.Remove(19);
+
+}
+catch (exception& error) {
+	cout << error.what() << endl;
+}
+kopija_operator = lista;
+cout << kopija << endl << kopija_operator << crt;
+
+#pragma endregion
+
+#pragma region EsejskoPitanje
+EsejskoPitanje esejsko1(1, "Sta je bootstrap?", "Operativni sistemi", 5, "Pocetni program koji sluzi za pokretanje racunara");
+EsejskoPitanje esejsko2(2, "Sta je CPU", "Operativni sistemi", 5, "Mozak racunara");
+EsejskoPitanje esejsko3(3, "Sta je ROM?", "Operativni sistemi", 4, "ROM je stalna memorija, koja ne gubi sadrzaj");
+esejsko1.Info();
+esejsko2.Info();
+esejsko3.Info();
+EsejskoPitanje test(esejsko1);
+EsejskoPitanje test_operator; 
+test_operator = esejsko2;
+cout << endl << endl;
+test.Info();
+test_operator.Info();
+cout << crt;
+#pragma endregion
+
+#pragma region MCMAPitanje
+MCMAPitanje mcma1(1, "Kakve tipove multiprocesiranja koriste danasnji viseprocesorski sistemi?", "Operativni sistemi", 0,10);
+MCMAPitanje mcma2(2, "Softverski dio racunara radi u kojim modovima?", "Operativni sistemi", 0,10);
+MCMAPitanje mcma3(3, "Sta mora obezbijediti sistem za multiprogramiranje?", "Operativni sistemi",0,10);
+
+mcma1.AddOdgovor("Paraleleno", false);
+mcma1.AddOdgovor("Jednostruko", false);
+mcma1.AddOdgovor("Asimetricno", true);
+mcma1.AddOdgovor("Simetricno", true);
+
+mcma2.AddOdgovor("Jednostavni", false);
+mcma2.AddOdgovor("Kernel", true);
+mcma2.AddOdgovor("Kompleksni", false);
+mcma2.AddOdgovor("Korisnicki", true);
+
+mcma3.AddOdgovor("Struju", false);
+mcma3.AddOdgovor("I/O rutine", true);
+mcma3.AddOdgovor("Upravljanje memorijom", true);
+mcma3.AddOdgovor("Hladjenje", false);
+mcma3.AddOdgovor("CPU rasporedjivanje", true);
+mcma3.AddOdgovor("Alokaciju uredjaja", true);
+mcma3.AddOdgovor("Automatizaciju", false);
+
+#pragma endregion
+
+#pragma region MCSAPitanje
+MCSAPitanje mcsa1(1, "Kernel call:", "Operativni sistemi", 3, 10);
+MCSAPitanje mcsa2(2, "The big mess je?", "Operativni sistemi", 3, 10);
+MCSAPitanje mcsa3(3, "Proces moze preci iz stanja NEW u RUNNING?", "Operativni sistemi", 2, 10);
+MCSAPitanje mcsa4(4, "Proces moze preci iz stanja READY u RUNNING?", "Operativni sistemi", 2, 10);
+
+mcsa1.AddOdgovor("Prebacuje program iz korisnickog u sistemski rezim i daje kontrolu OS-u", true);
+mcsa1.AddOdgovor("Prebacuje program iz korisnickog u sistemski rezim i daje kontrolu korisniku", false);
+mcsa1.AddOdgovor("Prebacuje program iz korisnickog u sistemski rezim i daje kontrolu memoriji", false);
+
+mcsa2.AddOdgovor("Postojanje hijerarhije", false);
+mcsa2.AddOdgovor("Nepostojanje hijerarhije", true);
+mcsa2.AddOdgovor("Nepostojanje memorije", false);
+
+mcsa3.AddOdgovor("DA", false);
+mcsa3.AddOdgovor("NE", true);
+
+mcsa4.AddOdgovor("DA", true);
+mcsa4.AddOdgovor("NE", false);
+
+try {
+	mcsa1.AddOdgovor("Ovo je samo testiranje...", true);
+}
+catch (exception& error) {
+	cout << error.what() << endl;
+}
+
+MCSAPitanje proba(mcsa2);
+MCSAPitanje proba2(10);
+proba2 = mcsa4;
+proba.Info();
+proba2.Info();
+cout << crt;
+mcsa1.Info();
+mcsa2.Info();
+mcsa3.Info();
+mcsa4.Info();
+
+#pragma endregion
+
+#pragma region Pojam
+Pojam pojam1(1, "Sta je DHCP i sta moze dodijeliti?", "SMA", "Dynamic Host Configuration Protocol",5, 10);
+pojam1.AddOdgovor("IP adresu", true);
+pojam1.AddOdgovor("memoriju", false);
+pojam1.AddOdgovor("domenu", true);
+pojam1.AddOdgovor("MAC adresu", false);
+pojam1.AddOdgovor("Subnet masku", true);
+pojam1.AddOdgovor("Gateway", true);
+
+Pojam proba_konstruktor(pojam1);
+Pojam proba_operator(10);
+proba_operator = pojam1;
+
+proba_konstruktor.Info();
+proba_operator.Info();
+cout << crt;
+
+#pragma endregion
+
+#pragma region Test
+
+Test _test("IB170067");
+
+_test.DodajPitanje(esejsko1);
+_test.DodajPitanje(esejsko2);
+_test.DodajPitanje(esejsko3);
+_test.DodajPitanje(mcma1);
+_test.DodajPitanje(mcma2);
+_test.DodajPitanje(mcma3);
+_test.DodajPitanje(mcsa1);
+_test.DodajPitanje(mcsa2);
+_test.DodajPitanje(mcsa3);
+_test.DodajPitanje(mcsa4);
+_test.DodajPitanje(pojam1);
+
+_test.PokreniTest();
+_test.Info();
+
+#pragma endregion
+
+system("pause>0");
+return 0;
+}
+
