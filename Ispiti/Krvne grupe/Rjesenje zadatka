@@ -689,7 +689,6 @@ int main() {
 		mail1.join();
 	}
 
-
 		/*ukoliko transfuzijski centar posjeduje zahtijevane kolicine na stanju, odmah ce ih ustupiti prema zahtjevu,
 		a u slucaju da ne posjeduje onda ce (koristeci multithreading) kontaktirati (poslati email poruku sa odgovarajucim sadrzajem)
 		sve donore koji zadovoljavaju sljedece uslove:
@@ -697,6 +696,7 @@ int main() {
 		- oznacili su da zele biti kontaktirani
 		- nisu davali krv u posljednja 3 mjeseca
 		*/
+		
 	if (tcMostar.ProvjeriStanje("0-") >= 8)
 		tcMostar.DodajZahtjev(zahtjev_0_neg);
 	else {
@@ -706,8 +706,8 @@ int main() {
 
 
 
-	///*ispisuje matricu ili tablicu iz koje je vidljiva kompatibilnost izmeðu pojedinih krvnih grupa. 
-	//pored naziva i rh faktora krvne grupe, u zagradi ispisati i trenutnu kolièinu na stanju. matrica prikazana na kraju zadatka*/
+	/*ispisuje matricu ili tablicu iz koje je vidljiva kompatibilnost izmeðu pojedinih krvnih grupa. 
+	pored naziva i rh faktora krvne grupe, u zagradi ispisati i trenutnu kolièinu na stanju. matrica prikazana na kraju zadatka*/
 	tcMostar.IspisiMatricuKompatibilnosti(krvneGrupe);
 
 	delete jasmin;
