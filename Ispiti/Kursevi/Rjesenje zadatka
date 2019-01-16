@@ -2,8 +2,6 @@
 #include<string>
 #include<vector>
 #include<regex>
-#include<mutex>
-#include<thread>
 #include<exception>
 #include<ctime>
 using namespace std;
@@ -333,16 +331,6 @@ public:
 
 	SkillsCentar(const SkillsCentar & obj) :_kursevi(obj._kursevi), _aplikanti(obj._aplikanti) {
 		_nazivCentra = obj._nazivCentra;
-	}
-
-	SkillsCentar& operator=( SkillsCentar& obj) {
-		if (this != &obj) {
-			_nazivCentra = obj._nazivCentra;
-			_kursevi = obj._kursevi;
-			_aplikanti = obj._aplikanti;
-		}
-		return *this;
-		
 	}
 
 	int ImaLiIsti(const Kurs& kurs) {
