@@ -1,0 +1,322 @@
+#include<iostream>
+#include<exception>
+#include<vector>
+#include<iterator>
+#include<algorithm>
+#include<string>
+using namespace std;
+
+template<class T1>
+class Kolekcija {
+    T1 * _elementi1;
+    int _trenutnoElemenata;
+    int max;
+public:
+
+    /*1. potrebne funkcije
+    2. operator+= :: omogucava dodavanje novog elementa u kolekciju. Osigurati automatsko prosiranje kolekcije,
+    te onemoguciti ponavljanje elemenata. U zavisnosti od uspjesnosti operacije funkcija vraca true ili
+    false.
+    3. operator-= :: na osnovu parametra tipa T1 uklanja element iz kolekcije. Ukoliko je potrebno, prilikom
+    uklanjanja elementa izvrsiti dealokaciju. Onemoguciti pojavljivanje neinicijaliziranih elemenata, te
+    ocuvati redoslijed dodavanja elemenata. U zavisnosti od uspjesnosti operacije, funkcija vraca true ili
+    false*/
+
+    Kolekcija() {
+        _trenutnoElemenata = 0;
+        max = 10;
+        _elementi1 = new T1[max];
+    }
+
+    ~Kolekcija() {
+        _elementi1 = nullptr;
+    }
+
+    bool operator+=(T1& elem) {
+        
+        if (_trenutnoElemenata == 0) {
+            _elementi1[0] = elem;
+            _trenutnoElemenata++;
+            return true;
+        }
+            
+        for (int i = 0;i<_trenutnoElemenata;i++)
+            if (_elementi1[i] == elem)
+                return false;
+
+        if (_trenutnoElemenata == max) {
+            max += 10;
+            T1 * temp = new T1[max];
+            for (int i = 0;i<_trenutnoElemenata;i++)
+                temp[i] = _elementi1[i];
+
+            delete[] _elementi1;
+            _elementi1 = temp;
+            delete[] temp;
+            temp = nullptr;
+        }
+
+        _elementi1[_trenutnoElemenata] = elem;
+        _trenutnoElemenata++;
+        return true;
+    }
+
+    bool operator-=(T1& elem) {
+        for (int i = 0;i < _trenutnoElemenata;i++)
+            if (_elementi1[i] == elem) {
+                for (int j = i;j < _trenutnoElemenata-1;j++)
+                    _elementi1[j] = _elementi1[j + 1];
+                _trenutnoElemenata--;
+                return true;
+            }
+        return false;
+    }
+
+    int getTrenutnoElemenata() {
+        return _trenutnoElemenata;
+    }
+
+    T1& getElement(int i) {
+        return _elementi1[i];
+    }
+
+    friend ostream& operator<<(ostream& out, Kolekcija& k) {
+        for (int i = 0;i < k._trenutnoElemenata;i++)
+            out << k._elementi1[i] << endl;
+        return out;
+    }
+};
+class Datum {
+    int * _dan, *_mjesec, *_godina;
+    //1. potrebne funkcije
+public:
+
+    Datum() {
+        _dan = new int(9);
+        _mjesec = new int(2);
+        _godina = new int(2016);
+    }
+
+    Datum(int d, int m, int g) {
+        _dan = new int(d);
+        _mjesec = new int(m);
+        _godina = new int(g);
+    }
+
+    Datum(const Datum& d) {
+        _dan = new int(*d._dan);
+        _mjesec = new int(*d._mjesec);
+        _godina = new int(*d._godina);
+    }
+
+    ~Datum() {
+        delete _dan;
+        delete _mjesec;
+        delete _godina;
+        _dan = nullptr;
+        _mjesec = nullptr;
+        _godina = nullptr;
+    }
+
+    Datum& operator=(const Datum& d) {
+        if (this != &d) {
+            _dan = new int(*d._dan);
+            _mjesec = new int(*d._mjesec);
+            _godina = new int(*d._godina);
+        }
+        return *this;
+    }
+
+    bool operator<(Datum& d) {
+        if (*_godina <= *d._godina)
+            return true;
+        if (*_mjesec <= *d._mjesec)
+            return true;
+        if(*_dan <= *d._dan)
+            return true;
+        return false;
+    }
+
+    friend ostream& operator<<(ostream& out, Datum d) {
+        out << *d._dan << "." << *d._mjesec << "." << *d._godina << endl;
+        return out;
+    }
+};
+class TelefonskiPrikljucak {
+    Datum _datumPrikljucenja;
+    char* _telefonskiBroj;//036 111 222
+    bool _aktivan; //u slucaju da se broj više ne koristi
+                   //1. potrebne funkcije
+public:
+
+    TelefonskiPrikljucak(Datum d= Datum(), char* b="---", bool a=false) :_datumPrikljucenja(d) {
+        _telefonskiBroj = new char[strlen(b)+1];
+        strcpy_s(_telefonskiBroj, strlen(b)+1, b);
+        _aktivan = a;
+    }
+
+    TelefonskiPrikljucak(const TelefonskiPrikljucak& t) {
+        _telefonskiBroj = new char[strlen(t._telefonskiBroj) + 1];
+        strcpy_s(_telefonskiBroj, strlen(t._telefonskiBroj) + 1, t._telefonskiBroj);
+        _datumPrikljucenja = t._datumPrikljucenja;
+        _aktivan = t._aktivan;
+    }
+
+    ~TelefonskiPrikljucak() {
+        delete[] _telefonskiBroj;
+        _telefonskiBroj = nullptr;
+    }
+
+    char* getBroj() {
+        return _telefonskiBroj;
+    }
+
+    Datum& getDatum() {
+        return _datumPrikljucenja;
+    }
+
+    bool operator==(TelefonskiPrikljucak& t) {
+        if (strcmp(t._telefonskiBroj, _telefonskiBroj)==0)
+            return true;
+        return false;
+    }
+
+    friend ostream& operator<<(ostream& out, TelefonskiPrikljucak t) {
+        out << "Telefonski broj: " << t._telefonskiBroj << endl;
+        out << "Datum: " << t._datumPrikljucenja;
+        out << "Aktivan: " << t._aktivan << endl;
+        return out;
+    }
+};
+class TelecomKorisnik {
+    char * _imePrezimeKorisnika;
+    Kolekcija<TelefonskiPrikljucak> * _telefonskiPrikljucci;
+    vector<float> _dugovi;//odnosi se na neizmirene dugove na svakom telefonskom prikljucku
+                          /* 1. operator [] :: vraca pokazivac na objekat tipa TelefonskiPrikljucak kod koga je broj telefona
+                          identican onome koji je proslijedjen kao parametar. U slucaju da trazeni broj ne postoji funkcija
+                          vraca NULL.
+                          2. AddTelefonskiPrikljucak :: dodaje podatke o novom telefonskom priljucku korisnika. Nije dozvoljeno
+                          dodati dva identicna telefonska broja. Prilikom dodavanja novog prikljucka iznos duga treba biti
+                          postavljen na 0. U zavisnosti od uspjesnosti operacije, funkcija vraca true ili false.
+                          3. RemoveTelefonskiPrikljucakByDatum :: na osnovu dva primljena parametra (tipa Datum) uklanja podatke o
+                          svim telefonskim prikljuccima koji su izvrseni u periodu izmedju ta dva datuma. Nije dozvoljeno
+                          uklanjanje informacija o prikljuccima za koje postoji evidentiran dug. Nakon uklanjanja informacija o
+                          prikljucku, potrebno je ukloniti i lokacije na kojima se čuvala informacija o njihovim dugovima.
+                          Funkcija vraca broj uklonjenih prikljucaka.*/
+public:
+
+    TelecomKorisnik() {
+        _imePrezimeKorisnika = new char[5];
+        strcpy_s(_imePrezimeKorisnika, 4, "---");
+        _telefonskiPrikljucci = new Kolekcija<TelefonskiPrikljucak>();
+    }
+
+    TelecomKorisnik(char* ip) {
+        _imePrezimeKorisnika = new char[strlen(ip) + 1];
+        strcpy_s(_imePrezimeKorisnika, strlen(ip) + 1, ip);
+        _telefonskiPrikljucci = new Kolekcija<TelefonskiPrikljucak>();
+    }
+
+    ~TelecomKorisnik() {
+        delete[] _imePrezimeKorisnika;
+        _imePrezimeKorisnika = nullptr;
+    }
+
+    TelefonskiPrikljucak* operator[](char* t) {
+        for (int i = 0;i < _telefonskiPrikljucci->getTrenutnoElemenata();i++)
+            if (strcmp(t, _telefonskiPrikljucci->getElement(i).getBroj())==0)
+                return &(_telefonskiPrikljucci->getElement(i));
+        return NULL;
+    }
+
+    bool AddTelefonskiPrikljucak(TelefonskiPrikljucak& t) {
+        if (*_telefonskiPrikljucci += t) {
+            _dugovi.push_back(0.0);
+            return true;
+        }
+        return false;
+    }
+
+    int RemoveTelefonskiPrikljucakByDatum(Datum& b, Datum& e) {
+        int c = 0;
+        for (int i = 0;i < _telefonskiPrikljucci->getTrenutnoElemenata();i++) {
+            if (b < _telefonskiPrikljucci->getElement(i).getDatum() && _telefonskiPrikljucci->getElement(i).getDatum() < e) {
+                if (_dugovi[i] == 0) {
+                    (*_telefonskiPrikljucci) -= (_telefonskiPrikljucci->getElement(i));
+                    _dugovi.erase(_dugovi.begin()+i);
+                    c++;
+                }
+            }
+        }
+        return c;
+    }
+
+    bool operator==(TelecomKorisnik& t) {
+        if (strcmp(_imePrezimeKorisnika, t._imePrezimeKorisnika)==0)
+            return true;
+        return false;
+    }
+
+    friend ostream& operator<<(ostream& out, TelecomKorisnik& t) {
+        out << "Ime i Prezime korisnika: " << t._imePrezimeKorisnika<<endl;
+        out << "Telefonski Prikljucci: " << endl;
+        out << *t._telefonskiPrikljucci;
+        out << "Dugovanja: " << endl;
+        for (vector<float>::iterator it = t._dugovi.begin(); it != t._dugovi.end();it++) {
+            out << *it<<endl;
+        }
+        return out;
+    }
+};
+void PretragaPoBroju(Kolekcija<TelecomKorisnik>& BHTelecomKorisnici, char * trazeniBroj) {
+    /*Funkcija treba da ispise podatke o korisniku prikljucka koji je vlasnik trazenog broja*/
+    for (int i = 0;i<BHTelecomKorisnici.getTrenutnoElemenata();i++) {
+        if (BHTelecomKorisnici.getElement(i)[trazeniBroj] != NULL) {
+            cout << BHTelecomKorisnici.getElement(i);
+            return;
+        }
+    }
+    cout << "Ne postoji!"<<endl;
+}
+
+void main() {
+    //izbjegavajte koristenje vlastitog imena i prezimena.
+    //provjeriti validnost izvrsenja svih dostupnih funkcionalnosti na objektu BHTelecomKorisnici
+    Kolekcija<TelecomKorisnik> BHTelecomKorisnici;
+    Datum d(2, 3, 2016);
+    Datum d1(5, 3, 2016);
+    Datum d2(4, 4, 2016);
+    Datum d3(2, 6, 2016);
+    Datum datum(1, 1, 2016);
+    Datum datum1(4, 7, 2016);
+    TelefonskiPrikljucak prvi(d, "063-254-165", true);
+    TelefonskiPrikljucak drugi(d1, "063-232-163", false);
+    TelefonskiPrikljucak treci(d2, "063-111-222", false);
+    TelefonskiPrikljucak cetvrti(d3, "063-126-215", true);
+    TelecomKorisnik test("John Doe");
+    TelecomKorisnik test1("Jane Doe");
+    test.AddTelefonskiPrikljucak(prvi);
+    test.AddTelefonskiPrikljucak(drugi);
+    test1.AddTelefonskiPrikljucak(treci);
+    test1.AddTelefonskiPrikljucak(cetvrti);
+    cout << test;
+    cout << "-----------------------------------" << endl;
+    cout << test1;
+    cout << "-----------------------------------" << endl;
+    if (test["063-232-163"] == NULL)
+        cout << "Telefonski prikljucak ne postoji kod tog korsinika!" << endl;
+    else
+        cout << *test["063-232-163"];
+    cout << "-----------------------------------" << endl;
+    cout << "Uklonjeno je: " << test.RemoveTelefonskiPrikljucakByDatum(d3, datum1) << " telefonskih prikljuacaka" << endl;
+    cout << "------------------------Krajnje------------------------" << endl;
+    cout << "------------------------BHTelecomKorisnici------------------------" << endl;
+    BHTelecomKorisnici += test;
+    BHTelecomKorisnici += test1;
+    cout << BHTelecomKorisnici;
+    cout << "------------------------Poslije brisanja------------------------" << endl;
+    BHTelecomKorisnici -= test1;
+    cout << BHTelecomKorisnici;
+    cout<<"Pretraga korisnika po broju"<<endl;
+    PretragaPoBroju(BHTelecomKorisnici,"063-232-163");
+}
