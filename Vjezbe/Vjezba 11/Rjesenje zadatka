@@ -1,0 +1,605 @@
+#include<iostream>
+#include<exception>
+#include<string>
+#include<regex>
+#include<vector>
+using namespace std;
+
+char * AlocirajNizKaraktera(const char * sadrzaj) {
+	if (sadrzaj == nullptr)
+		return nullptr;
+	int vel = strlen(sadrzaj) + 1;
+	char * temp = new char[vel];
+	strcpy_s(temp, vel, sadrzaj);
+
+	return temp;
+}
+
+class NedozvoljenaOperacija : public exception {
+	int linijaKoda;
+public:
+	NedozvoljenaOperacija(const char * poruka, int lin):exception(poruka) {
+		linijaKoda = lin;
+	}
+	void ErrorInfo() {
+		cout << "LINIJA: " << linijaKoda << endl;
+		cout << "GRESKA: " << exception::what() << endl;
+	}
+};
+
+
+template<class T>
+class Kolekcija{
+	T* _elementi;
+	int _trenutno;
+	void Kopiraj(const Kolekcija& original) {
+		_trenutno = original._trenutno;
+		_elementi = new T[_trenutno];
+		for (int i = 0; i < _trenutno; i++)
+			_elementi[i] = original._elementi[i];
+	}
+public:
+	//Kolekciju dopuniti u skladu sa potrebama zadatka
+	Kolekcija(){
+		_elementi = nullptr;
+		_trenutno = 0;
+	}
+	
+	Kolekcija(const Kolekcija& original) { Kopiraj(original); }
+
+	Kolekcija& operator=(const Kolekcija& original) {
+		if (this != &original) {
+			delete[] _elementi;
+			Kopiraj(original);
+		}
+		return *this;
+	}
+
+	~Kolekcija()
+	{
+		delete[] _elementi;
+		_elementi = nullptr;
+	}
+
+	void AddElement(const T& el){
+		T* temp = new T[_trenutno + 1];
+		for (int i = 0; i < _trenutno; i++)
+			temp[i] = _elementi[i];
+		
+		delete[] _elementi;
+		_elementi = temp;
+
+		_elementi[_trenutno++] = el;
+	}
+
+	void RemoveElement(int indeks) {
+		if (indeks < 0 || indeks >= _trenutno)
+			throw NedozvoljenaOperacija("Nepostojeca lokacija.", __LINE__);
+		T* temp = new T[_trenutno - 1];
+		int br = 0;
+		for (int i = 0; i < _trenutno; i++)
+			if (indeks != i) 
+				temp[br++] = _elementi[i];
+		delete[] _elementi;
+		_elementi = temp;
+		_trenutno--;
+	}
+
+	int GetTrenutno()const { return _trenutno; }
+
+	T& operator[](int index){
+		if (index < 0 || index >= _trenutno)
+			throw NedozvoljenaOperacija("Nepostojeca lokacija. ", __LINE__);
+		return _elementi[index];
+	}
+
+	friend ostream& operator<<<>(ostream&, const Kolekcija&);
+};
+
+template<class T>
+ostream& operator<<<>(ostream& cout, const Kolekcija<T>& kol){
+	for (int i = 0; i < kol._trenutno; i++)
+		cout << kol._elementi[i] << endl;
+	
+	return cout;
+}
+
+//Kataloška prodaja
+class Proizvod{
+	char _sifra[10];
+	char* _naziv;
+	double _cijena;
+	double _popust; //Izrazen procentualno
+	//Dostupno proizvoda
+	int _kolicina;
+	void Kopiraj(const Proizvod& original) {
+		strncpy_s(_sifra, original._sifra, _TRUNCATE);
+		_naziv = AlocirajNizKaraktera(original._naziv);
+		_cijena = original._cijena;
+		_kolicina = original._kolicina;
+		_popust = original._popust;
+	}
+public:
+	//Konstruktor i destruktor funkcije
+
+	Proizvod(const char* sifra, const char* naziv, double cijena, int kolicina){
+		//U slučaju nedozvoljenih vrijednosti za cijenu, popust i količinu baciti izuzetak
+		if (cijena < 0 || kolicina < 0)
+			throw NedozvoljenaOperacija("Pogresne vrijednosti atributa cijena ili kolicina.", __LINE__);
+
+		strncpy_s(_sifra, sifra, _TRUNCATE);
+
+		_naziv = AlocirajNizKaraktera(naziv);
+
+		_cijena = cijena;
+		_kolicina = kolicina;
+		_popust = 0;
+	}
+	
+	Proizvod(const Proizvod& original) { Kopiraj(original); }
+
+	Proizvod& operator=(const Proizvod& original) {
+		if (this != &original) {
+			delete[] _naziv;
+			Kopiraj(original);
+		}
+		return *this;
+	}
+
+	virtual ~Proizvod()
+	{
+		delete[] _naziv;
+		_naziv = nullptr;
+	}
+
+	//Implementirati potrebne funkcije za rad sa klasom
+	virtual void Info() {
+		cout << "Sifra: " << _sifra << endl;
+		cout << "Naziv: " << _naziv << endl;
+		cout << "Cijena: " << _cijena << " KM" << endl;
+		cout << "Popust: " << _popust << endl;
+		cout << "Kolicina: " << _kolicina << endl;
+	}
+
+	const char* GetSifra() const { return _sifra; }
+
+	int GetKolicina() const{ return _kolicina; }
+
+	double GetCijena() const { return _cijena; }
+
+	double GetPopust() const { return _popust; }
+
+};
+
+//Implementirati nasljeđivanje
+class Odjeca:public Proizvod{
+	Kolekcija<char*> _velicine;
+	Kolekcija<char*> _boje;
+	char _kategorija[50];
+	void Kopiraj(const Odjeca& original) {
+		strncpy_s(_kategorija, original._kategorija, _TRUNCATE);
+		for (int i = 0; i < original._velicine.GetTrenutno(); i++)
+			_velicine.AddElement(AlocirajNizKaraktera(const_cast<Odjeca*>(&original)->_velicine[i]));
+		for (int i = 0; i < original._boje.GetTrenutno(); i++)
+			_boje.AddElement(AlocirajNizKaraktera(const_cast<Odjeca*>(&original)->_boje[i]));
+	}
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	Odjeca(const char* sifra, const char* naziv, double cijena, int kolicina,const char* kategorija):
+		Proizvod(sifra,naziv,cijena,kolicina){
+		strncpy_s(_kategorija, kategorija, _TRUNCATE);
+	}
+
+	Odjeca(const Odjeca& original):Proizvod(original) { Kopiraj(original); }
+
+	Odjeca& operator=(const Odjeca& original) {
+		if (this != &original) {
+			for (int i = 0; i < _velicine.GetTrenutno(); i++)
+				delete[] _velicine[i];
+			for (int i = 0; i < _boje.GetTrenutno(); i++)
+				delete[] _boje[i];
+			(*(Proizvod*)(this)) = original;
+			Kopiraj(original);
+		}
+		return *this;
+	}
+
+	~Odjeca(){
+		for (int i = 0; i < _velicine.GetTrenutno(); i++) {
+			delete[] _velicine[i];
+			_velicine[i] = nullptr;
+		}
+		for (int i = 0; i < _boje.GetTrenutno(); i++) {
+			delete[] _boje[i];
+			_boje[i] = nullptr;
+		}
+	}
+	//Implementirati potrebne funkcije za rad sa klasom
+	void AddVelicinu(const char* velicina) {
+		for (int i = 0; i < _velicine.GetTrenutno(); i++)
+			if (strcmp(_velicine[i], velicina) == 0)
+				return;
+		_velicine.AddElement(AlocirajNizKaraktera(velicina));
+	}
+
+	void AddBoju(const char* boja) {
+		for (int i = 0; i < _boje.GetTrenutno(); i++)
+			if (strcmp(_boje[i], boja) == 0)
+				return;
+		_boje.AddElement(AlocirajNizKaraktera(boja));
+	}
+
+	void Info() {
+		Proizvod::Info();
+		cout << "Kategorija: " << _kategorija<<endl;
+		cout << "Velicine: " << _velicine;
+		cout << "Boje: " << _boje << endl;
+	}
+};
+
+bool DatumValidan(string sadrzaj) {
+	string pravilo = "\\d{2}\\.\\d{2}\\.\\d{4}";
+	if (regex_match(sadrzaj, regex(pravilo)))
+		return true;
+	return false;
+}
+class Katalog
+{
+	char* _naslov;
+	char* _vrijediDo; //Datum u formatu dd.MM.yyyy
+	Kolekcija<Proizvod*> _proizvodi;
+	void Kopiraj( const Katalog& original) {
+		_naslov = AlocirajNizKaraktera(original._naslov);
+		_vrijediDo = AlocirajNizKaraktera(original._vrijediDo);
+		for (int i = 0; i < original._proizvodi.GetTrenutno(); i++)
+			_proizvodi.AddElement(new Proizvod(*const_cast<Katalog*>(&original)->_proizvodi[i]));
+	}
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	Katalog(const char* naslov, const char* vrijediDo){
+		//U slučaju da datum ne ispunjava zadati format baciti izuzetak
+		if (!DatumValidan(vrijediDo))
+			throw NedozvoljenaOperacija("Datum nije validan.", __LINE__);
+		_naslov = AlocirajNizKaraktera(naslov);
+		_vrijediDo = AlocirajNizKaraktera(vrijediDo);
+	}
+
+	Katalog(const Katalog& original) { Kopiraj(original); }
+
+	Katalog& operator=(const Katalog& original) {
+		if (this != &original) {
+			delete[] _naslov;
+			delete[] _vrijediDo;
+			for (size_t i = 0; i < _proizvodi.GetTrenutno(); i++)	
+				delete _proizvodi[i];
+			Kopiraj(original);
+		}
+		return *this;
+	}
+
+	~Katalog(){
+		delete[] _naslov;
+		_naslov = nullptr;
+
+		delete[] _vrijediDo;
+		_vrijediDo = nullptr;
+
+		for (size_t i = 0; i < _proizvodi.GetTrenutno(); i++)
+		{
+			delete _proizvodi[i];
+			_proizvodi[i] = nullptr;
+		}
+	}
+
+	//Kreirati funkciju za dodavanje proizvoda u katalog i pri tome provjeriti da li se radi
+	//o objektu izvedene ili osnovne klase.
+	//Onemogućiti dodavanje identičnih proizvoda u jedan katalog (proizvode razlikovati samo na osnovu šifre).
+	//U slučaju pokušaja dodavanja istih proizvoda baciti izuzetak.
+	int PostojiProizvod(const char* sifra) {
+		for (int i = 0; i < _proizvodi.GetTrenutno(); i++)
+			if (strcmp(_proizvodi[i]->GetSifra(), sifra) == 0)
+				return i;
+		return -1;
+	}
+
+	void AddProizvod(Proizvod& proizvod) {
+
+		if (PostojiProizvod(proizvod.GetSifra())!=-1)
+			throw NedozvoljenaOperacija("Proizvod vec postoji u katalogu.", __LINE__);
+		Odjeca* temp = dynamic_cast<Odjeca*>(&proizvod);
+		if (temp != nullptr)
+			_proizvodi.AddElement(new Odjeca(*temp));
+		else
+			_proizvodi.AddElement(new Proizvod(proizvod));
+	}
+
+	//Funkciju za uklanjanje proizvoda iz kataloga na osnovu šifre.
+	//Ukoliko se ne pronađe traženi proizvod baciti izuzetak.
+	void RemoveProizvod(const char* sifra) {
+		int indeks = PostojiProizvod(sifra);
+		if (indeks == -1)
+			throw NedozvoljenaOperacija("Proizvod ne postoji u katalogu.", __LINE__);
+		_proizvodi.RemoveElement(indeks);
+	}
+	
+	//Preklopiti operator za ispis kataloške ponude
+	friend ostream& operator<<(ostream& ispis, Katalog& k) {
+		ispis << "Naslov kataloga: " << k._naslov << endl;
+		ispis << "Vrijedi do: " << k._vrijediDo << endl;
+		ispis << "Proizvodi: " << endl ;
+		for (int i = 0; i < k._proizvodi.GetTrenutno(); i++)
+			k._proizvodi[i]->Info();
+		return ispis;
+	}
+};
+
+class Narudzba
+{
+	int _broj;
+	char* _datumIsporuke; //Datum u formatu dd.MM.yyyy
+	Kolekcija<Proizvod*> _naruceniProizvodi;
+	bool _otkazana;
+	void Kopiraj( const Narudzba& original) {
+		_broj = original._broj;
+		_datumIsporuke = AlocirajNizKaraktera(original._datumIsporuke);
+		_otkazana = original._otkazana;
+		for (int i = 0; i < original._naruceniProizvodi.GetTrenutno(); i++) {
+			Odjeca* temp = dynamic_cast<Odjeca*>(const_cast<Narudzba*>(&original)->_naruceniProizvodi[i]);
+			if (temp != nullptr)
+				_naruceniProizvodi.AddElement(new Odjeca(*temp));
+			else
+				_naruceniProizvodi.AddElement(new Proizvod(*const_cast<Narudzba*>(&original)->_naruceniProizvodi[i]));
+		}
+	}
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	//U slučaju da datum ne ispunjava zadati format baciti izuzetak.
+	Narudzba(int broj,const char* datumIsporuke,bool otkazana=false){
+		if (!DatumValidan(datumIsporuke))
+			throw NedozvoljenaOperacija("Datum nije validan.", __LINE__);
+		_broj = broj;
+		_datumIsporuke = AlocirajNizKaraktera(datumIsporuke);
+		_otkazana = otkazana;
+	}
+
+	Narudzba():_broj(0),_datumIsporuke(nullptr),_otkazana(false){}
+
+	Narudzba(const Narudzba& original) { Kopiraj(original); }
+
+	Narudzba& operator=(const Narudzba& original){
+		if (this != &original) {
+			delete[] _datumIsporuke;
+			for (int i = 0; i < _naruceniProizvodi.GetTrenutno(); i++)
+				delete _naruceniProizvodi[i];
+			Kopiraj(original);
+		}
+		return *this;
+	}
+
+	~Narudzba(){
+		delete[] _datumIsporuke; _datumIsporuke = nullptr;
+		for (int i = 0; i < _naruceniProizvodi.GetTrenutno(); i++){
+			delete _naruceniProizvodi[i];
+			_naruceniProizvodi[i] = nullptr;
+		}
+	}
+
+	//Kreirati funkciju za dodavanje proizvoda narudžbe sa povratnom vrijednošću tipa bool.
+	//Ukoliko proizvod više nije dostupan baciti izuzetak.
+	//Dozvoliti dodavanje istog proizvoda više puta.
+	bool AddProizvod(const Proizvod& proizvod) {
+		if (proizvod.GetKolicina() == 0)
+			return false;
+		Odjeca* temp = dynamic_cast<Odjeca*>(const_cast<Proizvod*>(&proizvod));
+		if (temp != nullptr)
+			_naruceniProizvodi.AddElement(new Odjeca(*temp));
+		else
+			_naruceniProizvodi.AddElement(new Proizvod(proizvod));
+			return true;
+
+	}
+
+	//Funkciju za uklanjanje određenog proizvoda iz narudžbe. Voditi računa da narudžba može 
+	//imati više puta isti proizvod.
+
+	vector<int> NadjiProizvod(Proizvod& proizvod) {
+		vector<int> indeksi;
+		for (int i = 0; i < _naruceniProizvodi.GetTrenutno(); i++)
+			if (strcmp(_naruceniProizvodi[i]->GetSifra(), proizvod.GetSifra()) == 0)
+				indeksi.push_back(i);
+		return indeksi;
+	}
+
+	bool RemoveProizvod(Proizvod& proizvod) {
+		for (int i = 0; i < _naruceniProizvodi.GetTrenutno(); i++)
+			if (strcmp(_naruceniProizvodi[i]->GetSifra(), proizvod.GetSifra()) == 0) {
+				_naruceniProizvodi.RemoveElement(i);
+				i = -1;
+			}
+		return true;
+	}
+
+	//Dodati funkciju za proračun ukupne cijene narudžbe.
+	//Voditi računa o mogućnosti dodavanja više istih proizvoda (količina).
+	//Uračunati popust u slučaju da je definisan.
+	float GetIznosNarudzbe() {
+		float ukupno = 0;
+		for (int i = 0; i < _naruceniProizvodi.GetTrenutno(); i++) {
+			ukupno += _naruceniProizvodi[i]->GetCijena();
+			ukupno -= ukupno*_naruceniProizvodi[i]->GetPopust();
+		}
+		
+		return ukupno / _naruceniProizvodi.GetTrenutno();
+	}
+
+	//Preklopiti operator za ispis podataka o narudžbi zajedno sa cijenom.
+	friend ostream& operator<<(ostream& ispis, Narudzba& n) {
+		ispis << "Broj isporuke: " << n._broj << endl;
+		ispis << "Datum isporuke: " << n._datumIsporuke<< endl;
+		ispis << "Naruceni proizvodi: " << endl;
+		for (int i = 0; i < n._naruceniProizvodi.GetTrenutno(); i++)
+			n._naruceniProizvodi[i]->Info();
+		return ispis;
+	}
+
+	int GetBroj() { return _broj; }
+
+	void SetOtkazana(bool otkazana) { _otkazana = otkazana; }
+
+	Kolekcija<Proizvod*> GetProizvodi() { return _naruceniProizvodi; }
+
+	char* GetDatum() { return _datumIsporuke; }
+};
+
+//U posljednjoj klasi samostalno prepoznati izuzetne situacije
+class Prodavac
+{
+	char* _imePrezime;
+	Kolekcija<Narudzba>* _narudzbe;
+	void Kopiraj(const Prodavac& original) {
+		_imePrezime = AlocirajNizKaraktera(original._imePrezime);
+		_narudzbe = new Kolekcija<Narudzba>(*original._narudzbe);
+	}
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	Prodavac(const char* imeprezime):_narudzbe(new Kolekcija<Narudzba>()){
+		_imePrezime = AlocirajNizKaraktera(imeprezime);
+	}
+
+	Prodavac(Prodavac& original) { Kopiraj(original); }
+
+	Prodavac& operator=(const Prodavac& original) {
+		if (this != &original) {
+			delete[] _imePrezime;
+			delete _narudzbe;
+			Kopiraj(original);
+		}
+		return *this;
+	}
+
+	~Prodavac(){
+		delete[] _imePrezime; _imePrezime = nullptr;
+		delete _narudzbe; _narudzbe = nullptr;
+	}
+
+	//Omogućiti dodavanje narudžbi za prodavača
+	void AddNarudzba(const Narudzba& narudzba) {
+		_narudzbe->AddElement(narudzba);
+	}
+
+	//Omogućiti otkazivanje narudžbe na osnovu njenog broja.
+	int NadjiNarudzbu(int broj) {
+		for (int i = 0; i < _narudzbe->GetTrenutno(); i++)
+			if ((*_narudzbe)[i].GetBroj()==broj)
+				return i;
+		return -1;
+	}
+
+	void OtkaziNarudzbu(int broj) {
+		int indeks = NadjiNarudzbu(broj);
+		if (indeks == -1)
+			return;
+		(*_narudzbe)[indeks].SetOtkazana(true);
+	}
+	//Ispis svih podataka o prodavaču i kratke informacije o
+	//svim narudžbama (datum, broj proizvoda i cijena). Posebno izdvojiti otkazane narudžbe.
+
+	void Info() {
+		cout << "Ime i prezime: " << _imePrezime << endl;
+		cout << "Narudzbe: " << endl;
+		for (int i = 0; i < _narudzbe->GetTrenutno(); i++){
+			cout << "Broj proizvoda: " << (*_narudzbe)[i].GetProizvodi().GetTrenutno() << endl;
+			cout << "Datum isporuke: " << (*_narudzbe)[i].GetDatum() << endl;
+			cout << "Cijena narudzbe: " << (*_narudzbe)[i].GetIznosNarudzbe() << endl;
+		}
+	}
+
+	//Implementirati metodu koja u svim aktivnim narudžbama pronalazi proizvod koji se najviše prodavao
+	//sa informacijom o tome da li se radi o odjeći ili osnovnom proizvodu.
+
+};
+
+int main()
+{
+	//Dodati minimalno 5 proizvoda u katalog.
+	//Ispisati ponudu kupcu
+	//Omogućiti kreiranje narudžbe za jednog prodavača na osnovu izbora kupca.
+
+	Kolekcija<int> kolekcija;
+	for (int i = 0; i < 10; i++)
+		kolekcija.AddElement(i + 1);
+	cout << kolekcija << endl;
+	try {
+		cout << kolekcija[-5] << endl;
+	}
+	catch (NedozvoljenaOperacija& greska) {
+		greska.ErrorInfo();
+	}
+
+	try {
+		Proizvod test("MA1134", "Majica", -2, 5);
+	}
+	catch (NedozvoljenaOperacija& greska) {
+		greska.ErrorInfo();
+	}
+
+	try {
+		Odjeca test2("TR331", "Trenerka", 28.5, -10, "Sportska oprema");
+	}
+	catch (NedozvoljenaOperacija& greska) {
+		greska.ErrorInfo();
+	}
+
+	Proizvod trenerka("TR6372", "Trenerka", 31.99, 15);
+	Odjeca majica("MA1234", "Majica (kratki rukav)", 16, 20, "standardno");
+	majica.AddVelicinu("M");
+	majica.AddVelicinu("S");
+	majica.AddVelicinu("XL");
+	majica.AddVelicinu("XXL");
+	majica.AddBoju("plava");
+	majica.AddBoju("bijela");
+	majica.AddBoju("crna");
+	majica.AddBoju("crvena");
+	majica.AddBoju("narandzasta");
+	majica.Info();
+
+	try {
+		Katalog test("Katalog proljece-ljeto", "11.122.2018");
+	}
+	catch (NedozvoljenaOperacija& greska) {
+		greska.ErrorInfo();
+	}
+
+	Katalog katalog1("Katalog jesen-zima", "15.01.2019");
+	katalog1.AddProizvod(majica);
+	katalog1.AddProizvod(trenerka);
+	katalog1.RemoveProizvod("MA1234");
+	cout << katalog1 << endl;
+
+	Narudzba narudzba(1, "10.01.2019");
+
+	if (narudzba.AddProizvod(trenerka))
+		cout << "Proizvod uspjesno narucen" << endl;
+	if (narudzba.AddProizvod(trenerka))
+		cout << "Proizvod uspjesno narucen" << endl;
+	if (narudzba.AddProizvod(majica))
+		cout << "Proizvod uspjesno narucen" << endl;
+	
+	cout << endl << endl << narudzba << endl;
+
+	if (narudzba.RemoveProizvod(trenerka))
+		cout << "Proizvod uspjesno uklonjen sa narudzbe." << endl;
+
+	cout << "Ukupni iznos narudzbe je: " << narudzba.GetIznosNarudzbe() << endl;
+	cout << endl << endl << narudzba << endl;
+
+	Prodavac prodavac("Aldin Talic");
+	prodavac.AddNarudzba(narudzba);
+	prodavac.Info();
+	system("pause>0");
+
+	return 0;
+}
+
+
+
